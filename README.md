@@ -7,7 +7,9 @@
 Для проверки в Постмене:
 
 POST : http://127.0.0.1:8000/api/register
+
 body:
+
 {
     "name" : "test",
     "email" : "test@example.com",
@@ -16,7 +18,9 @@ body:
 
 
 POST : http://127.0.0.1:8000/api/login
+
 body:
+
 {
     "email" : "test@example.com",
     "password" : "test12345"
