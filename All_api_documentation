@@ -1,0 +1,137 @@
+===========================
+AUTH
+===========================
+
+1) REGISTER  
+POST /api/register  
+BODY (JSON):
+{
+    "role": "admin | manager | student | employee",
+    "email": "user@example.com",
+    "password": "password123",
+    "phone_number": "+77071234567",
+    "lastname": "Tulepbergen",
+    "name": "Nurkhan",
+    "middlename": "Khanovich",
+    "uni_id": "123456"
+}
+
+RESPONSE:
+- user object
+- token
+
+
+2) LOGIN  
+POST /api/login  
+BODY:
+{
+    "email": "user@example.com",
+    "password": "password123"
+}
+
+RESPONSE:
+- user object
+- token
+
+
+3) ME (получить текущего пользователя)  
+GET /api/me  
+HEADERS:
+Authorization: Bearer <token>
+
+
+4) LOGOUT  
+POST /api/logout  
+HEADERS:
+Authorization: Bearer <token>
+
+
+===========================
+NEWS (для всех авторизованных)
+===========================
+
+5) Получить все новости  
+GET /api/news  
+HEADERS:
+Authorization: Bearer <token>
+
+
+6) Получить конкретную новость  
+GET /api/news/{id}  
+HEADERS:
+Authorization: Bearer <token>
+
+
+===========================
+NEWS — ADMIN PANEL
+(role: admin)
+===========================
+
+7) Создать новость  
+POST /api/news  
+HEADERS:
+Authorization: Bearer <token>
+
+BODY:
+{
+    "title": "Новость дня",
+    "description": "Описание новости",
+    "photo": "https://example.com/image.jpg"
+}
+
+8) Обновить новость  
+PUT /api/news/{id}  
+HEADERS:
+Authorization: Bearer <token>
+
+BODY:
+{
+    "title": "Новое название",
+    "description": "Новое описание",
+    "photo": "https://example.com/new.jpg"
+}
+
+9) Удалить новость  
+DELETE /api/news/{id}  
+HEADERS:
+Authorization: Bearer <token>
+
+
+===========================
+NEWS — MANAGER PANEL
+(role: manager)
+(имеет такие же права, как admin)
+===========================
+
+10) Создать новость  
+POST /api/news  
+BODY:
+{
+    "title": "Новость",
+    "description": "Текст",
+    "photo": "img.jpg"
+}
+
+11) Обновить новость  
+PUT /api/news/{id}  
+BODY:
+{
+    "title": "Менеджер обновил",
+    "description": "Описание",
+    "photo": null
+}
+
+12) Удалить новость  
+DELETE /api/news/{id}
+
+
+===========================
+STUDENT PANEL (role: student)
+— пока нет методов —
+===========================
+
+
+===========================
+EMPLOYEE PANEL (role: employee)
+— пока нет методов —
+===========================
