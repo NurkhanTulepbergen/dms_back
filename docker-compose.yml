@@ -10,8 +10,8 @@ services:
     working_dir: /var/www
     volumes:
       - ./:/var/www
-    depends_on:
-      - mysql
+    # MySQL больше не нужен
+    depends_on: []
 
   nginx:
     image: nginx:alpine
@@ -24,17 +24,3 @@ services:
       - ./docker/nginx/conf.d:/etc/nginx/conf.d
     depends_on:
       - app
-
-  mysql:
-    image: mysql:8
-    container_name: dms_mysql
-    restart: unless-stopped
-    environment:
-      MYSQL_ROOT_PASSWORD: root
-      MYSQL_DATABASE: dms
-      MYSQL_USER: dms
-      MYSQL_PASSWORD: dms123
-    ports:
-      - "3307:3306"
-    volumes:
-      - ./docker/mysql:/var/lib/mysql
