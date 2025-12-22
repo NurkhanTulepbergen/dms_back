@@ -1,6 +1,7 @@
 <?php
-namespace App\Http\Controllers;
+namespace Modules\Auth\Http\Controllers;
 
+use App\Http\Controllers\Controller;
 use Modules\User\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
