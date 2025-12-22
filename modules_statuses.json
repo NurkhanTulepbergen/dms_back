@@ -1,0 +1,7 @@
+{
+    "User": true,
+    "Auth": true,
+    "News": true,
+    "Dormitory": true,
+    "Requests": true
+}
