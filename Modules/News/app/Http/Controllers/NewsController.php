@@ -9,9 +9,9 @@ use Illuminate\Http\Request;
 class NewsController extends Controller
 {
     public function index() {
-        return response()->json(
-            News::orderByDesc('created_at')->get(), 200
-        );
+        $news = News::orderByDesc('created_at')->get();
+
+        return result($news, 200, 'Новости');
     }
 
     public function store(Request $request) {
@@ -25,24 +25,17 @@ class NewsController extends Controller
             'description' => $request->description,
             'photo' => $request->photo,
         ]);
-        response()->json($news, 201);
+        return result($news, 201, 'Новость успешна создана');
     }
 
     public function show($id) {
-        $news = News::find($id);
+        $news = News::findOrfail($id);
 
-        if(!$news) {
-            return response()->json(['message' => 'News not found'], 404);
-        }
-
-        return response()->json($news, 200);
+        return result($news, 200, 'Новость');
     }
 
     public function update(Request $request, $id) {
-        $news=News::find($id);
-        if(!$news) {
-            return response()->json(['message' => 'News not found'], 404);
-        }
+        $news=News::findOrFail($id);
 
         $request->validate([
             'title' => 'required|string|max:255',
@@ -55,18 +48,13 @@ class NewsController extends Controller
             'description',
             'photo',
         ]));
-        return response()->json($news, 200);
+        return result($news, 200, 'Новость обновлена');
     }
 
     public function destroy($id) {
-        $news = News::find($id);
-
-        if(!$news) {
-            return response()->json(['message' => 'News not found'], 404);
-        }
-
+        $news = News::findOrFail($id);
         $news->delete();
 
-        return response()->json(['message' => 'News successfully deleted'], 200);
+        return response()->noContent();
     }
 }

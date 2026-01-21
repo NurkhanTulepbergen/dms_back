@@ -2,9 +2,11 @@
 namespace Modules\Auth\Http\Controllers;
 
 use App\Http\Controllers\Controller;
+use Illuminate\Support\Facades\Auth;
 use Modules\User\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use function Laravel\Prompts\password;
 
 class AuthController extends Controller
 {
@@ -32,10 +34,13 @@ class AuthController extends Controller
         ]);
 
         $token = $user->createToken('auth_token')->plainTextToken;
-        return response()->json([
-            'user'=>$user,
-            'token'=>$token
-        ]);
+        return result([
+            'token' => [
+                'access_token' => $token,
+                'type' => 'Bearer',
+            ],
+            'user' => $user,
+        ], 201, 'Регистрация завершена');
     }
 
     public function login(Request $request){
@@ -52,18 +57,48 @@ class AuthController extends Controller
 
         $token = $user->createToken('auth_token')->plainTextToken;
 
-        return response()->json([
-            'user'=>$user,
-            'token'=>$token
-        ]);
+        return result([
+            'token' => [
+                'access_token' => $token,
+                'type' => 'Bearer',
+            ],
+            'user' => $user,
+        ], 200, 'Вход выполнен успешно');
     }
 
     public function logout(Request $request){
         $request->user()->currentAccessToken()->delete();
-        return response()->json([
-            'message' => 'Logged out'
-        ]);
+        return result(null,204);
     }
 
+    public function resetpassword(Request $request)
+    {
+        $request->validate([
+            'old_password' => 'required',
+            'new_password' => 'required|min:8',
+            'confirm_password' => 'required|same:new_password',
+        ]);
+        $user = Auth::user();
 
+        if(!Hash::check($request->old_password, $user->password)) {
+            return result(
+                null,
+                422,
+                "Старый пароль указан неверно"
+            );
+        }
+        $user->update([
+            'password' => Hash::make($request->new_password),
+        ]);
+
+        return result(
+            [
+                'email' => $user->email,
+                'uni_id' => $user->uni_id
+            ],
+
+            200,
+            'Пароль успешно обновлен'
+        );
+    }
 }

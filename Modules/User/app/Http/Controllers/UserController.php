@@ -12,7 +12,10 @@ class UserController extends Controller
     public function index(Request $request )
     {
 
-        return response()->json($request->user());
+        return result(
+            $request->user(),
+            200,'Информация о пользователе'
+        );
     }
 
     /**

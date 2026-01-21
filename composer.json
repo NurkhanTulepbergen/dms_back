@@ -31,7 +31,10 @@
             "Modules\\News\\": "Modules/News/app",
             "Modules\\Dormitory\\": "Modules/Dormitory/app",
             "Modules\\Requests\\": "Modules/Requests/app"
-        }
+        },
+        "files": [
+            "app/Helpers/result.php"
+        ]
     },
     "autoload-dev": {
         "psr-4": {
