@@ -7,13 +7,14 @@ use Illuminate\Http\Request;
 use Modules\Requests\Models\RequestLive;
 use Modules\Dormitory\Models\Room;
 use Illuminate\Support\Facades\Auth;
+use Modules\Requests\Services\RequestLiveService;
 
 class RequestLiveController extends Controller
 {
-    /**
-     * 👨‍🎓 Студент подаёт заявку на проживание
-     * POST /requests/live
-     */
+    public function __construct(
+        private RequestLiveService $requestLive
+    ){}
+
     public function store(Request $request)
     {
         $validated = $request->validate([
@@ -23,105 +24,30 @@ class RequestLiveController extends Controller
 
         $user = Auth::user();
 
-        // ❗ защита: одна активная заявка
-        if (RequestLive::where('user_id', $user->id)
-            ->where('status', 'pending')
-            ->exists()) {
-            return response()->json([
-                'error' => 'You already have a pending request'
-            ], 422);
-        }
+        $final = $this->requestLive->pendingLiveRequest($validated, $user);
 
-        $room = Room::findOrFail($validated['room_id']);
-
-        // ❗ нет мест
-        if ($room->live_cap >= $room->capacity) {
-            return response()->json([
-                'error' => 'No free places in this room'
-            ], 422);
-        }
-
-        $requestLive = RequestLive::create([
-            'user_id' => $user->id,
-            'room_id' => $room->id,
-            'documents' => $validated['documents'] ?? null,
-            'status' => 'pending',
-        ]);
-
-        return response()->json([
-            'message' => 'Request submitted successfully',
-            'data' => $requestLive
-        ], 201);
+        return result($final, 201, 'Заявка успещно отправлена');
     }
 
-    /**
-     * 👨‍💼 Менеджер: список заявок
-     * GET /requests/live
-     */
     public function index()
     {
         $requests = RequestLive::with(['student', 'room.floor.building'])->get();
 
-        return response()->json([
-            'data' => $requests
-        ]);
+        return result($requests, 200, 'Запросы студентов');
     }
 
-    /**
-     * 👨‍💼 Менеджер: принять заявку
-     * POST /requests/live/{id}/approve
-     */
+
     public function approve($id)
     {
-        $requestLive = RequestLive::findOrFail($id);
+        $requestForLive = $this->requestLive->approveByManager($id);
 
-        if ($requestLive->status !== 'pending') {
-            return response()->json([
-                'error' => 'Request already processed'
-            ], 422);
-        }
-
-        $room = $requestLive->room;
-
-        if ($room->live_cap >= $room->capacity) {
-            return response()->json([
-                'error' => 'No free places in this room'
-            ], 422);
-        }
-
-        // обновляем заявку
-        $requestLive->update([
-            'status' => 'accepted'
-        ]);
-
-        // увеличиваем занятость комнаты
-        $room->increment('live_cap');
-
-        return response()->json([
-            'message' => 'Request approved'
-        ]);
+        return result($requestForLive, 200, 'Заявка успешна приянта');
     }
 
-    /**
-     * 👨‍💼 Менеджер: отклонить заявку
-     * POST /requests/live/{id}/reject
-     */
-    public function reject(Request $request, $id)
+    public function reject($id)
     {
-        $requestLive = RequestLive::findOrFail($id);
+        $requestLive = $this->requestLive->rejectByManager($id);
 
-        if ($requestLive->status !== 'pending') {
-            return response()->json([
-                'error' => 'Request already processed'
-            ], 422);
-        }
-
-        $requestLive->update([
-            'status' => 'rejected'
-        ]);
-
-        return response()->json([
-            'message' => 'Request rejected'
-        ]);
+        return result($requestLive, 200, 'Запрос успешно отклонен');
     }
 }

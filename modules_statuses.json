@@ -3,5 +3,7 @@
     "Auth": true,
     "News": true,
     "Dormitory": true,
-    "Requests": true
+    "Requests": true,
+    "Settlment": true,
+    "Settlement": true
 }

@@ -30,7 +30,9 @@
             "Modules\\Auth\\": "Modules/Auth/app",
             "Modules\\News\\": "Modules/News/app",
             "Modules\\Dormitory\\": "Modules/Dormitory/app",
-            "Modules\\Requests\\": "Modules/Requests/app"
+            "Modules\\Requests\\": "Modules/Requests/app",
+            "Modules\\Settlement\\": "Modules/Settlement/app"
+
         },
         "files": [
             "app/Helpers/result.php"

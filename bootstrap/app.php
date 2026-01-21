@@ -43,5 +43,5 @@ return Application::configure(basePath: dirname(__DIR__))
 
             return result(null, 404, 'Маршрут не найден');
         });
-    })
+    }) 
     ->create();
