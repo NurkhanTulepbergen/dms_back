@@ -4,6 +4,7 @@ namespace Modules\Dormitory\Http\Controllers;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
+use Modules\Dormitory\Models\Building;
 use Modules\Dormitory\Services\BuildingService;
 
 class BuildingController extends Controller
@@ -13,21 +14,22 @@ class BuildingController extends Controller
     )
     {}
 
-    public function indexBuilding()
+    // GET /api/v1/buildings
+    public function index()
     {
         $buildings = $this->buildingService->getAll();
 
         return result($buildings, 200, 'Список зданий');
     }
 
-    public function showBuilding($id)
+    // GET /api/v1/buildings/{building}
+    public function show(Building $building)
     {
-        $building = $this->buildingService->getById($id);
-
         return result($building, 200, 'Здание');
     }
 
-    public function storeBuilding(Request $request)
+    // POST /api/v1/buildings (role:admin,manager)
+    public function store(Request $request)
     {
         $validated = $request->validate([
             'address' => 'required|string|max:255',
@@ -39,28 +41,25 @@ class BuildingController extends Controller
         return result($building, 201, 'Здание успешно создано');
     }
 
-    public function updateBuilding(Request $request, int $id)
+    // PUT/PATCH /api/v1/buildings/{building} (role:admin,manager)
+    public function update(Request $request, Building $building)
     {
         $validated = $request->validate([
             'address' => 'required|string|max:255',
             'total_floors' => 'required|integer|min:1|max:100',
         ]);
 
-        $building = $this->buildingService->update($id, $validated);
+        $building = $this->buildingService->update((int) $building->id, $validated);
 
         return result($building, 200, 'Данные успешно обновлены');
     }
 
-
-
-    public function destroyBuilding(int $id)
+    // DELETE /api/v1/buildings/{building} (role:admin,manager)
+    public function destroy(Building $building)
     {
-
-        $this->buildingService->delete($id);
-
-        return response()->noContent();
+        $this->buildingService->delete((int) $building->id);
+        return result(null, 204);
     }
 
 }
-
 

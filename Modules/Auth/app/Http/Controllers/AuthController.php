@@ -21,6 +21,7 @@ class AuthController extends Controller
             'name' => 'required',
             'middlename' => 'required',
             'uni_id' => 'required| unique:users, uni_id',
+            'gender' => 'required|in:male,female',
         ]);
         $user = User::create([
             'role' => $request->role,
@@ -30,7 +31,8 @@ class AuthController extends Controller
             'lastname' => $request->lastname,
             'name' => $request->name,
             'middlename' => $request->middlename,
-            'uni_id' => $request->uni_id
+            'uni_id' => $request->uni_id,
+            'gender' => $request->gender,
         ]);
 
         $token = $user->createToken('auth_token')->plainTextToken;
@@ -86,6 +88,7 @@ class AuthController extends Controller
                 422,
                 "Старый пароль указан неверно"
             );
+
         }
         $user->update([
             'password' => Hash::make($request->new_password),

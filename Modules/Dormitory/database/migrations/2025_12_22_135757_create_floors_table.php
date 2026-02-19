@@ -19,6 +19,8 @@ return new class extends Migration
                 ->constrained('buildings')
                 ->onDelete('cascade');
             $table->integer('floor_number');
+            $table->string('gender_policy')->default('mixed'); // male | female | mixed
+            $table->boolean('is_active')->default(true);
             $table->timestamps();
         });
     }

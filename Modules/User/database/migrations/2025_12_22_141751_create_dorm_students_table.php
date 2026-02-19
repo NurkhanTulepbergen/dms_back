@@ -9,10 +9,6 @@ return new class extends Migration
     /**
      * Run the migrations.
      * 'user_id',
-     * 'live_status',
-     * 'room_id',
-     * 'start_live',
-     * 'end_live',
      * 'warning_count'
      */
     public function up(): void
@@ -24,14 +20,6 @@ return new class extends Migration
                 ->on('users')
                 ->onUpdate('cascade')
                 ->onDelete('cascade');
-            $table->boolean('live_status')->default(false);
-            $table->foreignId('room_id')
-                ->nullable()
-                ->constrained('rooms')
-                ->onUpdate('cascade')
-                ->onDelete('cascade');
-            $table->date('start_live')->nullable();
-            $table->date('end_live')->nullable();
             $table->integer('warning_count')->default(0);
             $table->timestamps();
         });

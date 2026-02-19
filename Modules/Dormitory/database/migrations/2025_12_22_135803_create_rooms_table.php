@@ -23,6 +23,7 @@ return new class extends Migration
             $table->integer('room_number');
             $table->integer('capacity');
             $table->integer('live_cap');
+            $table->boolean('is_active')->default(true);
             $table->timestamps();
         });
     }

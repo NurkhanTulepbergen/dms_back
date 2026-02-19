@@ -3,54 +3,113 @@
 namespace Modules\Settlement\Http\Controllers;
 
 use App\Http\Controllers\Controller;
+use App\Exceptions\BusinessException;
 use Illuminate\Http\Request;
+use Modules\Settlement\Models\Settlement;
+use Modules\Settlement\Services\SettlementService;
 
 class SettlementController extends Controller
 {
+    public function __construct(
+        private readonly SettlementService $settlementService,
+    ) {}
+
     /**
-     * Display a listing of the resource.
+     * GET /api/v1/settlements
      */
-    public function index()
+    public function index(Request $request)
     {
-        return view('settlement::index');
+        $settlements = Settlement::query()
+            ->with(['user', 'room.floor.building'])
+            ->orderByDesc('id')
+            ->get();
+
+        return result($settlements, 200, 'Settlements');
     }
 
     /**
-     * Show the form for creating a new resource.
+     * GET /api/v1/settlements/{id}
      */
-    public function create()
+    public function show(int $id)
     {
-        return view('settlement::create');
+        $settlement = Settlement::query()
+            ->with(['user', 'room.floor.building'])
+            ->findOrFail($id);
+
+        return result($settlement, 200, 'Settlement');
     }
 
     /**
-     * Store a newly created resource in storage.
+     * POST /api/v1/settlements
+     *
+     * Creates a settlement (typically admin manual).
      */
-    public function store(Request $request) {}
-
-    /**
-     * Show the specified resource.
-     */
-    public function show($id)
+    public function store(Request $request)
     {
-        return view('settlement::show');
+        $validated = $request->validate([
+            'user_id' => 'required|integer|exists:users,id',
+            'room_id' => 'required|integer|exists:rooms,id',
+            'source' => 'nullable|string|in:request_live,admin_manual,relocation',
+        ]);
+
+        $source = $validated['source'] ?? SettlementService::SOURCE_ADMIN_MANUAL;
+
+        $settlement = $this->settlementService->createSettlement(
+            (int) $validated['user_id'],
+            (int) $validated['room_id'],
+            $source,
+        );
+
+        return result($settlement, 201, 'Settlement created');
     }
 
     /**
-     * Show the form for editing the specified resource.
+     * PUT/PATCH /api/v1/settlements/{id}
+     *
+     * Supported actions:
+     * - close: { end_reason }
+     * - relocate: { new_room_id }
      */
-    public function edit($id)
+    public function update(Request $request, int $id)
     {
-        return view('settlement::edit');
+        $settlement = Settlement::query()->findOrFail($id);
+
+        if ($request->filled('end_reason')) {
+            $validated = $request->validate([
+                'end_reason' => 'required|string|in:graduation,eviction,relocation,personal',
+            ]);
+
+            $closed = $this->settlementService->closeSettlement(
+                (int) $settlement->user_id,
+                $validated['end_reason'],
+            );
+
+            return result($closed, 200, 'Settlement closed');
+        }
+
+        if ($request->filled('new_room_id')) {
+            $validated = $request->validate([
+                'new_room_id' => 'required|integer|exists:rooms,id',
+            ]);
+
+            $relocation = $this->settlementService->relocate(
+                (int) $settlement->user_id,
+                (int) $validated['new_room_id'],
+            );
+
+            return result($relocation, 200, 'Settlement relocated');
+        }
+
+        throw new BusinessException('Provide end_reason or new_room_id', 422);
     }
 
     /**
-     * Update the specified resource in storage.
+     * DELETE /api/v1/settlements/{id}
+     *
+     * Deleting settlements is not supported (history is stored in the same table).
      */
-    public function update(Request $request, $id) {}
-
-    /**
-     * Remove the specified resource from storage.
-     */
-    public function destroy($id) {}
+    public function destroy(int $id)
+    {
+        return result(null, 405, 'Method not allowed');
+    }
 }

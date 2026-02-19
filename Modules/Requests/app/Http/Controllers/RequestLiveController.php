@@ -18,8 +18,10 @@ class RequestLiveController extends Controller
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'room_id' => 'required|exists:rooms,id',
+            'preferred_room_id' => 'required|exists:rooms,id',
             'documents' => 'nullable|array',
+            'documents.*.type' => 'required_with:documents|string|max:255',
+            'documents.*.path' => 'required_with:documents|string|max:2048',
         ]);
 
         $user = Auth::user();
@@ -31,7 +33,7 @@ class RequestLiveController extends Controller
 
     public function index()
     {
-        $requests = RequestLive::with(['student', 'room.floor.building'])->get();
+        $requests = RequestLive::with(['student', 'preferredRoom.floor.building', 'documents'])->get();
 
         return result($requests, 200, 'Запросы студентов');
     }

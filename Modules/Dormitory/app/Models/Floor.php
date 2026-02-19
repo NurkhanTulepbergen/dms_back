@@ -7,7 +7,9 @@ class Floor extends Model
 {
     protected $fillable = [
         'building_id',
-        'floor_number'
+        'floor_number',
+        'gender_policy',
+        'is_active',
     ];
 
     public function building() {

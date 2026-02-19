@@ -9,9 +9,8 @@ return new class extends Migration
     /**
      * Run the migrations.
      * 'student_id',
-     * 'room_id',
+     * 'preferred_room_id',
      * 'status',
-     * 'documents'
      */
     public function up(): void
     {
@@ -23,12 +22,11 @@ return new class extends Migration
                 ->on('users')
                 ->cascadeOnUpdate()
                 ->cascadeOnDelete();
-            $table->foreignId('room_id')
+            $table->foreignId('preferred_room_id')
                 ->nullable()
                 ->constrained('rooms')
                 ->nullOnDelete();
             $table->string('status')->default('pending');
-            $table->json('documents')->nullable();
             $table->timestamps();
         });
     }

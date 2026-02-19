@@ -6,6 +6,7 @@ use App\Exceptions\BusinessException;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Modules\Dormitory\Models\Floor;
 use Modules\Dormitory\Models\Room;
+use Modules\Finance\Models\RoomType;
 
 class RoomService
 {
@@ -19,6 +20,12 @@ class RoomService
 
     public function create(array $data): Room
     {
+        if (!isset($data['room_type_id'])) {
+            throw new BusinessException('room_type_id is required', 422);
+        }
+
+        RoomType::findOrFail((int) $data['room_type_id']);
+
         // ❗ нельзя превышать вместимость
         if ($data['live_cap'] > $data['capacity']) {
             throw new BusinessException(
@@ -48,6 +55,12 @@ class RoomService
     public function update($id, array $data): Room
     {
         $room = Room::findOrFail($id);
+
+        if (!isset($data['room_type_id'])) {
+            throw new BusinessException('room_type_id is required', 422);
+        }
+
+        RoomType::findOrFail((int) $data['room_type_id']);
 
         if ($data['live_cap'] > $data['capacity']) {
             throw new BusinessException(

@@ -17,6 +17,7 @@ return new class extends Migration
             $table->string('middlename')->nullable()->after('lastname');
             $table->string('phone_number')->nullable()->after('password');
             $table->string('uni_id')->nullable()->after('middlename');
+            $table->enum('gender', ['male', 'female'])->nullable()->after('uni_id');
         });
     }
 
@@ -32,6 +33,7 @@ return new class extends Migration
                 'middlename',
                 'phone_number',
                 'uni_id',
+                'gender',
             ]);
         });
     }

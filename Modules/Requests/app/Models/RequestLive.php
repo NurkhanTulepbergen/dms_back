@@ -10,16 +10,20 @@ class RequestLive extends Model
 {
     protected $fillable = [
         'user_id',
-        'room_id',
+        'preferred_room_id',
         'status',
-        'documents'
     ];
 
     public function student() {
         return $this->belongsTo(User::class, 'user_id');
     }
 
-    public function room() {
-        return $this->belongsTo(Room::class, 'room_id');
+    public function preferredRoom() {
+        return $this->belongsTo(Room::class, 'preferred_room_id');
+    }
+
+    public function documents()
+    {
+        return $this->hasMany(Document::class, 'request_id');
     }
 }

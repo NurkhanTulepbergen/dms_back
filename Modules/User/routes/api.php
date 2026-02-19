@@ -3,8 +3,29 @@
 use Illuminate\Support\Facades\Route;
 use Modules\User\Http\Controllers\UserController;
 
-Route::middleware(['auth:sanctum'])->group(function () {
-    Route::apiResource('users', UserController::class)->names('user');
-    Route::get('json', "UserController@json");
-    Route::get('/me', [UserController::class, 'index']);
-});
+Route::prefix('v1')
+    ->middleware('auth:sanctum')
+    ->group(function () {
+
+        /*
+        |--------------------------------------------------------------------------
+        | Current user
+        |--------------------------------------------------------------------------
+        */
+        Route::get('me', [UserController::class, 'me']);
+
+        /*
+        |--------------------------------------------------------------------------
+        | Users (read-only for now)
+        |--------------------------------------------------------------------------
+        */
+        Route::get('users', [UserController::class, 'index']);
+        Route::get('users/{user}', [UserController::class, 'show']);
+
+        /*
+        |--------------------------------------------------------------------------
+        | Debug / legacy (если реально нужен)
+        |--------------------------------------------------------------------------
+        */
+        // Route::get('users-json', [UserController::class, 'json']);
+    });

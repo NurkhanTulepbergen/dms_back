@@ -9,13 +9,17 @@ use Modules\User\Models\User;
 class UserController extends Controller
 {
 
-    public function index(Request $request )
+    // GET /api/v1/me
+    public function me(Request $request)
     {
+        return result($request->user(), 200, 'Информация о пользователе');
+    }
 
-        return result(
-            $request->user(),
-            200,'Информация о пользователе'
-        );
+    // GET /api/v1/users
+    public function index()
+    {
+        $users = User::query()->orderByDesc('id')->get();
+        return result($users, 200, 'Пользователи');
     }
 
     /**
@@ -34,9 +38,9 @@ class UserController extends Controller
     /**
      * Show the specified resource.
      */
-    public function show($id)
+    public function show(User $user)
     {
-        return view('user::show');
+        return result($user, 200, 'Пользователь');
     }
 
     /**

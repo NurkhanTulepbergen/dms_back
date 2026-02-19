@@ -4,6 +4,7 @@ namespace Modules\Dormitory\Http\Controllers;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
+use Modules\Dormitory\Models\Floor;
 use Modules\Dormitory\Services\FloorService;
 
 class FloorController extends Controller
@@ -13,21 +14,24 @@ class FloorController extends Controller
     )
     {}
 
-    public function indexFloor()
+    // GET /api/v1/floors
+    public function index()
     {
-        $building = $this->floorService->getAll();
+        $floors = $this->floorService->getAll();
 
-        return result($building, 200, "Список этажей");
+        return result($floors, 200, "Список этажей");
     }
 
-    public function showFloor($id)
+    // GET /api/v1/floors/{floor}
+    public function show(Floor $floor)
     {
-        $floor = $this->floorService->getById($id);
+        $floor = $this->floorService->getById((int) $floor->id);
 
         return result($floor, 200, 'Этаж');
     }
 
-    public function storeFloor(Request $request)
+    // POST /api/v1/floors (role:admin,manager)
+    public function store(Request $request)
     {
         $validated = $request->validate([
             'building_id' => 'required|exists:buildings,id',
@@ -39,21 +43,22 @@ class FloorController extends Controller
         return result($floor, 201, 'Этаж создан успещно');
     }
 
-    public function updateFloor(Request $request, $id)
+    // PUT/PATCH /api/v1/floors/{floor} (role:admin,manager)
+    public function update(Request $request, Floor $floor)
     {
         $validated = $request->validate([
             'floor_number' => 'required|integer|min:1',
         ]);
 
-        $floor = $this->floorService->update($id, $validated);
+        $floor = $this->floorService->update((int) $floor->id, $validated);
 
         return result($floor, 200, 'Этаж успешно обновлен');
     }
 
-    public function destroyFloor($id)
+    // DELETE /api/v1/floors/{floor} (role:admin,manager)
+    public function destroy(Floor $floor)
     {
-        $this->floorService->delete($id);
-
-        return response()->noContent();
+        $this->floorService->delete((int) $floor->id);
+        return result(null, 204);
     }
 }

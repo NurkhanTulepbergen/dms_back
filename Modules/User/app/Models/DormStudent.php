@@ -10,10 +10,6 @@ class DormStudent extends Model
     protected $keyType = 'int';
     protected $fillable = [
         'user_id',
-        'live_status',
-        'room_id',
-        'start_live',
-        'end_live',
         'warning_count'
     ];
 

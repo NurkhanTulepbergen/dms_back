@@ -7,10 +7,12 @@
     "license": "MIT",
     "require": {
         "php": "^8.2",
+        "filament/filament": "^5.2",
         "laravel/framework": "^12.0",
         "laravel/sanctum": "^4.2",
         "laravel/tinker": "^2.10.1",
-        "nwidart/laravel-modules": "^12.0"
+        "nwidart/laravel-modules": "^12.0",
+        "stripe/stripe-php": "^19.3"
     },
     "require-dev": {
         "fakerphp/faker": "^1.23",
@@ -26,13 +28,13 @@
             "App\\": "app/",
             "Database\\Factories\\": "database/factories/",
             "Database\\Seeders\\": "database/seeders/",
-            "Modules\\User\\" : "Modules/User/app/",
+            "Modules\\User\\": "Modules/User/app/",
             "Modules\\Auth\\": "Modules/Auth/app",
             "Modules\\News\\": "Modules/News/app",
             "Modules\\Dormitory\\": "Modules/Dormitory/app",
             "Modules\\Requests\\": "Modules/Requests/app",
-            "Modules\\Settlement\\": "Modules/Settlement/app"
-
+            "Modules\\Settlement\\": "Modules/Settlement/app",
+            "Modules\\Finance\\": "Modules/Finance/app"
         },
         "files": [
             "app/Helpers/result.php"
@@ -62,7 +64,8 @@
         ],
         "post-autoload-dump": [
             "Illuminate\\Foundation\\ComposerScripts::postAutoloadDump",
-            "@php artisan package:discover --ansi"
+            "@php artisan package:discover --ansi",
+            "@php artisan filament:upgrade"
         ],
         "post-update-cmd": [
             "@php artisan vendor:publish --tag=laravel-assets --ansi --force"

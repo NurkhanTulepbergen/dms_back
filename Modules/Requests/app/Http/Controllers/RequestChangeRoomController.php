@@ -5,13 +5,15 @@ namespace Modules\Requests\Http\Controllers;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\DB;
 use Modules\Requests\Models\RequestChangeRoom;
-use Modules\Dormitory\Models\Room;
-use Modules\User\Models\DormStudent;
+use Modules\Requests\Services\RequestChangeRoomService;
 
 class RequestChangeRoomController extends Controller
 {
+    public function __construct(
+        private readonly RequestChangeRoomService $requestChangeRoomService,
+    ) {}
+
     /**
      * 👨‍🎓 Студент подаёт заявку на смену комнаты
      * POST /requests/change-room
@@ -25,37 +27,13 @@ class RequestChangeRoomController extends Controller
 
         $user = Auth::user();
 
-        $dormStudent = DormStudent::where('user_id', $user->id)->firstOrFail();
+        $requestChange = $this->requestChangeRoomService->createRequest(
+            (int) $user->id,
+            (int) $validated['room_id'],
+            $validated['description'] ?? null,
+        );
 
-        // ❗ нельзя подавать, если уже есть активная заявка
-        if (RequestChangeRoom::where('student_id', $dormStudent->user_id)
-            ->where('status', 'pending')
-            ->exists()) {
-            return response()->json([
-                'error' => 'You already have a pending change room request'
-            ], 422);
-        }
-
-        $newRoom = Room::findOrFail($validated['room_id']);
-
-        // ❗ нет свободных мест
-        if ($newRoom->live_cap >= $newRoom->capacity) {
-            return response()->json([
-                'error' => 'No free places in selected room'
-            ], 422);
-        }
-
-        $requestChange = RequestChangeRoom::create([
-            'student_id' => $dormStudent->user_id,
-            'room_id' => $newRoom->id,
-            'description' => $validated['description'] ?? null,
-            'status' => 'pending',
-        ]);
-
-        return response()->json([
-            'message' => 'Change room request submitted',
-            'data' => $requestChange
-        ], 201);
+        return result($requestChange, 201, 'Заявка на смену комнаты отправлена');
     }
 
     /**
@@ -69,9 +47,7 @@ class RequestChangeRoomController extends Controller
             'room.floor.building'
         ])->get();
 
-        return response()->json([
-            'data' => $requests
-        ]);
+        return result($requests, 200, 'Заявки на смену комнаты');
     }
 
     /**
@@ -80,47 +56,9 @@ class RequestChangeRoomController extends Controller
      */
     public function approve($id)
     {
-        $requestChange = RequestChangeRoom::findOrFail($id);
+        $result = $this->requestChangeRoomService->approve((int) $id);
 
-        if ($requestChange->status !== 'pending') {
-            return response()->json([
-                'error' => 'Request already processed'
-            ], 422);
-        }
-
-        $newRoom = $requestChange->room;
-
-        if ($newRoom->live_cap >= $newRoom->capacity) {
-            return response()->json([
-                'error' => 'No free places in selected room'
-            ], 422);
-        }
-
-        DB::transaction(function () use ($requestChange, $newRoom) {
-            $student = DormStudent::where('user_id', $requestChange->student_id)->firstOrFail();
-
-            // уменьшить занятость старой комнаты
-            if ($student->room_id) {
-                Room::where('id', $student->room_id)->decrement('live_cap');
-            }
-
-            // увеличить занятость новой комнаты
-            $newRoom->increment('live_cap');
-
-            // обновить студента
-            $student->update([
-                'room_id' => $newRoom->id
-            ]);
-
-            // обновить заявку
-            $requestChange->update([
-                'status' => 'accepted'
-            ]);
-        });
-
-        return response()->json([
-            'message' => 'Change room request approved'
-        ]);
+        return result($result, 200, 'Заявка на смену комнаты принята');
     }
 
     /**
@@ -129,20 +67,8 @@ class RequestChangeRoomController extends Controller
      */
     public function reject($id)
     {
-        $requestChange = RequestChangeRoom::findOrFail($id);
+        $requestChange = $this->requestChangeRoomService->reject((int) $id);
 
-        if ($requestChange->status !== 'pending') {
-            return response()->json([
-                'error' => 'Request already processed'
-            ], 422);
-        }
-
-        $requestChange->update([
-            'status' => 'rejected'
-        ]);
-
-        return response()->json([
-            'message' => 'Change room request rejected'
-        ]);
+        return result($requestChange, 200, 'Заявка на смену комнаты отклонена');
     }
 }

@@ -3,6 +3,8 @@
 namespace Modules\Dormitory\Http\Controllers;
 
 use App\Http\Controllers\Controller;
+use Modules\Dormitory\Models\Building;
+use Modules\Dormitory\Models\Floor;
 use Modules\Dormitory\Services\FloorService;
 use Modules\Dormitory\Services\RoomService;
 
@@ -13,19 +15,21 @@ class DormitoryController extends Controller
         private RoomService $roomService
     )
     {}
-    public function getFloorsForBuilding($id)
+
+    // GET /api/v1/buildings/{building}/floors
+    public function getFloorsForBuilding(Building $building)
     {
-        $floors = $this->floorService->getFloorsForBuilding($id);
+        $floors = $this->floorService->getFloorsForBuilding((int) $building->id);
 
         return result($floors, 200, 'Этажи');
     }
 
-    public function getRoomsForFloor($id)
+    // GET /api/v1/floors/{floor}/rooms
+    public function getRoomsForFloor(Floor $floor)
     {
-        $rooms = $this->roomService->getAllRoomsForFloor($id);
+        $rooms = $this->roomService->getAllRoomsForFloor((int) $floor->id);
 
         return result($rooms, 200, 'Комнаты');
     }
 }
-
 

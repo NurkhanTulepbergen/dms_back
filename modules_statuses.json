@@ -4,6 +4,6 @@
     "News": true,
     "Dormitory": true,
     "Requests": true,
-    "Settlment": true,
-    "Settlement": true
+    "Settlement": true,
+    "Finance": true
 }

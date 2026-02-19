@@ -19,6 +19,7 @@ class User extends Authenticatable
         'name',
         'middlename',
         'uni_id',
+        'gender',
     ];
 
     public function dormStudent() {
