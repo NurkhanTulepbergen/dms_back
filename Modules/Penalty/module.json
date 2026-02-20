@@ -1,0 +1,11 @@
+{
+    "name": "Penalty",
+    "alias": "penalty",
+    "description": "",
+    "keywords": [],
+    "priority": 0,
+    "providers": [
+        "Modules\\Penalty\\Providers\\PenaltyServiceProvider"
+    ],
+    "files": []
+}

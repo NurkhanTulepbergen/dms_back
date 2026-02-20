@@ -37,6 +37,8 @@ class AdminPanelProvider extends PanelProvider
             ->discoverResources(in: base_path('Modules/Settlement/app/Filament/Resources'), for: 'Modules\\Settlement\\Filament\\Resources')
             ->discoverResources(in: base_path('Modules/Requests/app/Filament/Resources'), for: 'Modules\\Requests\\Filament\\Resources')
             ->discoverResources(in: base_path('Modules/Finance/app/Filament/Resources'), for: 'Modules\\Finance\\Filament\\Resources')
+            ->discoverResources(in: base_path('Modules/Penalty/app/Filament/Resources'), for: 'Modules\\Penalty\\Filament\\Resources')
+
 
 
 

@@ -34,7 +34,8 @@
             "Modules\\Dormitory\\": "Modules/Dormitory/app",
             "Modules\\Requests\\": "Modules/Requests/app",
             "Modules\\Settlement\\": "Modules/Settlement/app",
-            "Modules\\Finance\\": "Modules/Finance/app"
+            "Modules\\Finance\\": "Modules/Finance/app",
+            "Modules\\Penalty\\": "Modules/Penalty/app"
         },
         "files": [
             "app/Helpers/result.php"
