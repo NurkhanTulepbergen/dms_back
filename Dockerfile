@@ -12,6 +12,11 @@ WORKDIR /var/www
 
 COPY . .
 
+# 👉 создаём .env
+RUN cp .env.example .env || true
+
+# install deps
 RUN composer install --no-dev --optimize-autoloader
 
-CMD sh -c "php artisan migrate --force && php -S 0.0.0.0:8080 -t public"
+# generate key + migrate + run server
+CMD sh -c "php artisan key:generate --force && php artisan migrate --force && php -S 0.0.0.0:8080 -t public"
