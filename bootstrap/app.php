@@ -10,7 +10,6 @@ use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
-
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
         web: __DIR__.'/../routes/web.php',
@@ -24,24 +23,43 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
+
+        // BusinessException → только API
         $exceptions->renderable(function (BusinessException $e, $request) {
-            return result(
-                null,
-                $e->status_code,
-                $e->getMessage()
-            );
-        });
-
-        $exceptions->renderable(function (AuthenticationException $e, $request) {
-            return result(null, 401, 'Неавторизованный пользователь');
-        });
-
-        $exceptions->renderable(function (NotFoundHttpException $e, $request) {
-            if ($e->getPrevious() instanceof ModelNotFoundException) {
-                return result(null, 404, 'Объект не найден');
+            if ($request->is('api/*')) {
+                return result(
+                    null,
+                    $e->status_code,
+                    $e->getMessage()
+                );
             }
 
-            return result(null, 404, 'Маршрут не найден');
+            return null;
         });
-    }) 
+
+        // Authentication → API JSON, Web стандартный редирект Filament
+        $exceptions->renderable(function (AuthenticationException $e, $request) {
+            if ($request->is('api/*')) {
+                return result(null, 401, 'Неавторизованный пользователь');
+            }
+
+            return null;
+        });
+
+        // NotFound → JSON только для API
+        $exceptions->renderable(function (NotFoundHttpException $e, $request) {
+
+            if ($request->is('api/*')) {
+                if ($e->getPrevious() instanceof ModelNotFoundException) {
+                    return result(null, 404, 'Объект не найден');
+                }
+
+                return result(null, 404, 'Маршрут не найден');
+            }
+
+            // для Filament / web — стандартный Laravel HTML 404
+            return null;
+        });
+
+    })
     ->create();

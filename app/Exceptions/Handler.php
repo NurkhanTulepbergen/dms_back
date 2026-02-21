@@ -12,28 +12,43 @@ class Handler extends ExceptionHandler
 {
     public function register(): void
     {
+        // Business логика → только для API
         $this->renderable(function (BusinessException $e, $request) {
-            return result(
-                null,
-                $e->status_code,
-                $e->getMessage()
-            );
+            if ($request->is('api/*')) {
+                return result(
+                    null,
+                    $e->status_code,
+                    $e->getMessage()
+                );
+            }
+
+            return null; // для web пусть Laravel обработает сам
         });
 
+        // Неавторизованный → API JSON, Web стандартный redirect
         $this->renderable(function (AuthenticationException $e, $request) {
-            return result(
-                null,
-                401,
-                'Неавторизованный пользователь'
-            );
+            if ($request->is('api/*')) {
+                return result(
+                    null,
+                    401,
+                    'Неавторизованный пользователь'
+                );
+            }
+
+            return null;
         });
 
-        $this->renderable(function (ModelNotFoundException $e) {
-            return result(
-                null,
-                404,
-                'Объект не найден'
-            );
+        // Модель не найдена → только для API
+        $this->renderable(function (ModelNotFoundException $e, $request) {
+            if ($request->is('api/*')) {
+                return result(
+                    null,
+                    404,
+                    'Объект не найден'
+                );
+            }
+
+            return null;
         });
     }
 }
