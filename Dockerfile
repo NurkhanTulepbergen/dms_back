@@ -20,4 +20,4 @@ RUN php artisan storage:link || true
 RUN php artisan optimize || true
 
 # ❗ КЛЮЧЕВОЕ: убрали router public/index.php
-CMD sh -c "php artisan migrate --force || true && php -S 0.0.0.0:${PORT:-8080} -t public"
+CMD sh -c "php artisan config:clear && php artisan cache:clear && php artisan migrate --force && php -S 0.0.0.0:${PORT:-8080} -t public"
