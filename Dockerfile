@@ -1,23 +1,17 @@
-FROM php:8.4-fpm
+FROM php:8.4-cli
 
-# Install system dependencies
+# System deps
 RUN apt-get update && apt-get install -y \
-    build-essential \
-    libpng-dev \
-    libonig-dev \
-    libxml2-dev \
-    zip unzip git curl
+    git unzip curl libzip-dev \
+    && docker-php-ext-install pdo pdo_mysql zip
 
-# Install PHP extensions
-RUN docker-php-ext-install pdo_mysql mbstring exif pcntl bcmath gd
-
-# Install Composer
+# Composer
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
-
-# Copy entrypoint script
-COPY docker/entrypoint.sh /entrypoint.sh
-RUN chmod +x /entrypoint.sh
 
 WORKDIR /var/www
 
-ENTRYPOINT ["/entrypoint.sh"]
+COPY . .
+
+RUN composer install --no-dev --optimize-autoloader
+
+CMD sh -c "php artisan migrate --force && php -S 0.0.0.0:8080 -t public"
