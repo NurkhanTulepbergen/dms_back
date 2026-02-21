@@ -3,6 +3,7 @@ namespace Modules\Auth\Http\Controllers;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Validation\Rule;
 use Modules\User\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
@@ -20,7 +21,7 @@ class AuthController extends Controller
             'lastname' => 'required',
             'name' => 'required',
             'middlename' => 'required',
-            'uni_id' => 'required| unique:users, uni_id',
+            'uni_id' => ['required', 'string', Rule::unique('users', 'uni_id')],
             'gender' => 'required|in:male,female',
         ]);
         $user = User::create([
