@@ -11,9 +11,6 @@ COPY . .
 
 RUN composer install --no-dev --optimize-autoloader
 
-# 🔥 КЛЮЧЕВОЙ ФИКС
-RUN php artisan optimize:clear
-
 RUN mkdir -p storage/logs storage/framework/cache storage/framework/sessions storage/framework/views bootstrap/cache
 RUN php artisan storage:link || true
 RUN chmod -R 775 storage bootstrap/cache || true
