@@ -55,7 +55,7 @@ class BuildingResource extends Resource
         $user = Filament::auth()->user();
         $allowed = (($user?->role ?? null) === 'admin');
 
-        Log::channel('stderr')->info('BUILDING_RESOURCE_ACCESS', [
+        Log::channel('forensics')->info('BUILDING_RESOURCE_ACCESS', [
             'ability' => $ability,
             'allowed' => $allowed,
             'user_id' => $user?->id,

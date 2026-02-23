@@ -105,6 +105,13 @@ return [
             'processors' => [PsrLogMessageProcessor::class],
         ],
 
+        'forensics' => [
+            'driver' => 'single',
+            'path' => storage_path('logs/forensics.log'),
+            'level' => 'debug',
+            'replace_placeholders' => true,
+        ],
+
         'syslog' => [
             'driver' => 'syslog',
             'level' => env('LOG_LEVEL', 'debug'),

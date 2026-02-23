@@ -9,6 +9,7 @@ use App\Exceptions\BusinessException;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Support\Facades\Log;
+use Symfony\Component\HttpKernel\Exception\HttpExceptionInterface;
 
 class Handler extends ExceptionHandler
 {
@@ -54,7 +55,7 @@ class Handler extends ExceptionHandler
         });
 
         $this->renderable(function (AuthorizationException $e, $request) {
-            Log::error('FILAMENT_AUTHZ_FAIL', [
+            Log::channel('forensics')->error('FILAMENT_AUTHZ_FAIL', [
                 'path' => $request->path(),
                 'method' => $request->method(),
                 'user_id' => optional($request->user())->id,
@@ -65,6 +66,28 @@ class Handler extends ExceptionHandler
             ]);
 
             return response('Forbidden (see logs)', 403);
+        });
+
+        $this->renderable(function (HttpExceptionInterface $e, $request) {
+            if ($e->getStatusCode() !== 403) {
+                return null;
+            }
+
+            $trace = $e->getTrace();
+            $top = $trace[0] ?? [];
+
+            Log::channel('forensics')->error('HTTP_403_ABORT', [
+                'path' => $request->path(),
+                'method' => $request->method(),
+                'user_id' => optional($request->user())->id,
+                'user_class' => $request->user() ? get_class($request->user()) : null,
+                'message' => $e->getMessage(),
+                'top_file' => $top['file'] ?? null,
+                'top_line' => $top['line'] ?? null,
+                'top_function' => $top['function'] ?? null,
+            ]);
+
+            return null;
         });
     }
 }
