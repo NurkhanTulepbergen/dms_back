@@ -24,4 +24,4 @@ RUN chmod -R 775 storage bootstrap/cache || true
 # (optional) можно прогреть кеши, но только если APP_KEY уже задан при сборке (обычно нет)
 # RUN php artisan config:cache && php artisan route:cache && php artisan view:cache || true
 
-CMD php -S 0.0.0.0:${PORT:-8080} -t public
+CMD php artisan serve --host=0.0.0.0 --port=${PORT:-8080}
