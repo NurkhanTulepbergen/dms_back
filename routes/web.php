@@ -4,6 +4,8 @@ use Illuminate\Support\Facades\Route;
 use Filament\Facades\Filament;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Log;
+use Modules\Dormitory\Filament\Resources\Buildings\BuildingResource;
+use Modules\Dormitory\Models\Building;
 
 Route::get('/_debug/logtest', function () {
     return response()->json([
@@ -47,6 +49,39 @@ Route::get('/_debug/gates', function () {
         'allows_viewAny_app_user' => class_exists(\App\Models\User::class) && $u
             ? Gate::forUser($u)->allows('viewAny', \App\Models\User::class)
             : null,
+    ]);
+});
+
+Route::get('/_debug/buildings-access', function () {
+    $authUser = auth('web')->user();
+    $filamentUser = Filament::auth()->user();
+
+    return response()->json([
+        'auth_web' => auth('web')->check(),
+        'auth_web_user' => [
+            'id' => $authUser?->id,
+            'email' => $authUser?->email,
+            'role' => $authUser?->role,
+            'class' => $authUser ? get_class($authUser) : null,
+        ],
+        'filament_auth_user' => [
+            'id' => $filamentUser?->id,
+            'email' => $filamentUser?->email,
+            'role' => $filamentUser?->role,
+            'class' => $filamentUser ? get_class($filamentUser) : null,
+        ],
+        'building_resource' => [
+            'can_access' => BuildingResource::canAccess(),
+            'can_view_any' => BuildingResource::canViewAny(),
+        ],
+        'gate' => [
+            'viewAny_building' => $authUser
+                ? Gate::forUser($authUser)->allows('viewAny', Building::class)
+                : null,
+            'create_building' => $authUser
+                ? Gate::forUser($authUser)->allows('create', Building::class)
+                : null,
+        ],
     ]);
 });
 
