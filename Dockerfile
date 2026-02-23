@@ -1,21 +1,21 @@
-FROM php:8.4-cli
+FROM php:8.4-fpm
 
-# System deps
 RUN apt-get update && apt-get install -y \
-    git unzip curl libzip-dev libicu-dev \
+    nginx git unzip curl libzip-dev libicu-dev \
     && docker-php-ext-install pdo pdo_mysql zip intl
 
-# Composer
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 
 WORKDIR /var/www
-
 COPY . .
 
-RUN composer install --no-dev --optimize-autoloader --no-scripts
-
+RUN composer install --no-dev --optimize-autoloader
 RUN php artisan storage:link || true
-RUN php artisan optimize || true
+RUN chmod -R 775 storage bootstrap/cache
 
-# Railway сам проксирует запросы к FPM
-CMD php -S 0.0.0.0:${PORT:-8080} -t public
+# nginx config
+COPY docker/nginx/default.conf /etc/nginx/conf.d/default.conf
+
+EXPOSE 8080
+
+CMD service nginx start && php-fpm
