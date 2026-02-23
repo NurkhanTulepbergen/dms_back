@@ -7,6 +7,8 @@ use Illuminate\Foundation\Exceptions\Handler as ExceptionHandler;
 use Throwable;
 use App\Exceptions\BusinessException;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
+use Illuminate\Auth\Access\AuthorizationException;
+use Illuminate\Support\Facades\Log;
 
 class Handler extends ExceptionHandler
 {
@@ -49,6 +51,20 @@ class Handler extends ExceptionHandler
             }
 
             return null;
+        });
+
+        $this->renderable(function (AuthorizationException $e, $request) {
+            Log::error('FILAMENT_AUTHZ_FAIL', [
+                'path' => $request->path(),
+                'method' => $request->method(),
+                'user_id' => optional($request->user())->id,
+                'user_class' => $request->user() ? get_class($request->user()) : null,
+                'ability' => method_exists($e, 'ability') ? $e->ability() : null,
+                'arguments' => method_exists($e, 'arguments') ? $e->arguments() : null,
+                'message' => $e->getMessage(),
+            ]);
+
+            return response('Forbidden (see logs)', 403);
         });
     }
 }
