@@ -4,6 +4,7 @@ namespace Modules\User\Models;
 
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Support\Facades\Log;
 use Laravel\Sanctum\HasApiTokens;
 use Filament\Panel;
 
@@ -29,6 +30,13 @@ class User extends Authenticatable
 
     public function canAccessPanel(Panel $panel): bool
     {
+        Log::info('canAccessPanel()', [
+            'panel' => $panel->getId(),
+            'user_id' => $this->id,
+            'email' => $this->email,
+            'role_raw' => $this->role,
+        ]);
+
         return $this->role === 'admin';
     }
 }
