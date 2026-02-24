@@ -15,4 +15,7 @@ RUN mkdir -p storage/logs storage/framework/cache storage/framework/sessions sto
 RUN php artisan storage:link || true
 RUN chmod -R 775 storage bootstrap/cache || true
 
-CMD php artisan serve --host=0.0.0.0 --port=${PORT:-8080}
+COPY entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
+
+CMD ["/entrypoint.sh"]
