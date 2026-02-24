@@ -1,211 +1,259 @@
-# ERD (по миграциям проекта)
+// =======================
+// USERS & STUDENTS
+// =======================
 
-Ниже 2 диаграммы:
-1) **Domain**: основные сущности общежитий и заявок.
-2) **Infra**: технические таблицы Laravel (auth/sanctum/sessions/jobs/cache).
+Table users {
+id bigint [pk]
+name varchar
+lastname varchar [null]
+middlename varchar [null]
+email varchar [unique]
+password varchar
+role varchar [default: 'student']
+phone_number varchar [null]
+uni_id varchar [null]
+gender varchar [note: 'male / female', null]
+discipline_limit int [default: 5]   // максимум допустимых баллов
+created_at timestamp
+updated_at timestamp
+}
 
-> Примечание: ERD собран по миграциям. Источник истины проживания: `settlements` (активное проживание = `end_at IS NULL`).
+Table dorm_students {
+user_id bigint [pk]
+warning_count int [default: 0]
+created_at timestamp
+updated_at timestamp
+}
 
-## Domain ERD
 
-```mermaid
-erDiagram
-  USERS {
-    bigint id PK
-    varchar name
-    varchar email "UNIQUE"
-    timestamp email_verified_at "NULL"
-    varchar password
-    varchar remember_token "NULL"
-    varchar role "default: student"
-    varchar lastname "NULL"
-    varchar middlename "NULL"
-    varchar phone_number "NULL"
-    varchar uni_id "NULL"
-    varchar gender "NULL (male|female)"
-    timestamp created_at
-    timestamp updated_at
-  }
+// =======================
+// DORM STRUCTURE
+// =======================
 
-  DORM_STUDENTS {
-    bigint user_id PK, FK
-    int warning_count "default: 0"
-    timestamp created_at
-    timestamp updated_at
-  }
+Table buildings {
+id bigint [pk]
+address varchar
+total_floors int
+created_at timestamp
+updated_at timestamp
+}
 
-  BUILDINGS {
-    bigint id PK
-    varchar address
-    int total_floors
-    timestamp created_at
-    timestamp updated_at
-  }
+Table floors {
+id bigint [pk]
+building_id bigint
+floor_number int
+gender_policy varchar [note: 'male / female / mixed']
+is_active boolean
+created_at timestamp
+updated_at timestamp
+}
 
-  FLOORS {
-    bigint id PK
-    bigint building_id FK
-    int floor_number
-    varchar gender_policy "default: mixed (male|female|mixed)"
-    boolean is_active "default: true"
-    timestamp created_at
-    timestamp updated_at
-  }
+Table room_types {
+id bigint [pk]
+name varchar                   // 2-bed standard
+semester_price decimal
+created_at timestamp
+updated_at timestamp
+}
 
-  ROOMS {
-    bigint id PK
-    bigint floor_id FK
-    int room_number
-    int capacity
-    int live_cap
-    boolean is_active "default: true"
-    timestamp created_at
-    timestamp updated_at
-  }
+Table rooms {
+id bigint [pk]
+floor_id bigint
+room_type_id bigint
+room_number int
+capacity int                   // физическая вместимость комнаты (source of truth)
+live_cap int                   // текущий лимит заселения (<= capacity)
+is_active boolean
+created_at timestamp
+updated_at timestamp
+}
 
-  REQUEST_LIVES {
-    bigint id PK
-    bigint user_id FK
-    bigint preferred_room_id FK "NULL"
-    varchar status "default: pending"
-    timestamp created_at
-    timestamp updated_at
-  }
 
-  DOCUMENTS {
-    bigint id PK
-    bigint request_id FK
-    varchar type
-    varchar path
-    timestamp created_at
-    timestamp updated_at
-  }
+// =======================
+// SETTLEMENTS (CORE)
+// =======================
 
-  REQUEST_CHANGE_ROOMS {
-    bigint id PK
-    bigint student_id FK
-    bigint room_id FK "NULL"
-    varchar status "default: pending"
-    text description "NULL"
-    timestamp created_at
-    timestamp updated_at
-  }
+Table settlements {
+id bigint [pk]
+user_id bigint
+room_id bigint
+start_at date
+end_at date [null]
+status varchar [note: 'active / finished / cancelled']
+source varchar                 // request_live / admin_manual / relocation
+end_reason varchar [null]      // graduation / eviction / relocation / personal / discipline
+created_at timestamp
+updated_at timestamp
+}
 
-  NEWS {
-    bigint id PK
-    varchar title
-    text description
-    varchar photo "NULL"
-    timestamp created_at
-    timestamp updated_at
-  }
 
-  SETTLEMENTS {
-    bigint id PK
-    bigint user_id FK
-    bigint room_id FK
-    date start_at
-    date end_at "NULL"
-    varchar status "active|finished|cancelled"
-    varchar source "request_live|admin_manual|relocation"
-    varchar end_reason "NULL (graduation|eviction|relocation|personal)"
-    timestamp created_at
-    timestamp updated_at
-  }
+// =======================
+// REQUESTS
+// =======================
 
-  BUILDINGS ||--o{ FLOORS : has_many
-  FLOORS ||--o{ ROOMS : has_many
+Table request_lives {
+id bigint [pk]
+user_id bigint
+preferred_room_id bigint [null]
+status varchar [default: 'pending']
+created_at timestamp
+updated_at timestamp
+}
 
-  USERS ||--o| DORM_STUDENTS : has_one
+Table request_change_rooms {
+id bigint [pk]
+student_id bigint
+room_id bigint [null]
+status varchar [default: 'pending']
+description text [null]
+created_at timestamp
+updated_at timestamp
+}
 
-  USERS ||--o{ REQUEST_LIVES : submits
-  ROOMS ||--o{ REQUEST_LIVES : preferred_room
-  REQUEST_LIVES ||--o{ DOCUMENTS : has_many
 
-  DORM_STUDENTS ||--o{ REQUEST_CHANGE_ROOMS : submits
-  ROOMS ||--o{ REQUEST_CHANGE_ROOMS : requested_for
+// =======================
+// DOCUMENTS
+// =======================
 
-  USERS ||--o{ SETTLEMENTS : settles
-  ROOMS ||--o{ SETTLEMENTS : occupied_by
-```
+Table documents {
+id bigint [pk]
+request_id bigint
+type varchar
+path varchar
+created_at timestamp
+}
 
-## Infra ERD
 
-```mermaid
-erDiagram
-  PERSONAL_ACCESS_TOKENS {
-    bigint id PK
-    varchar tokenable_type
-    bigint tokenable_id
-    text name
-    varchar token "UNIQUE(64)"
-    text abilities "NULL"
-    timestamp last_used_at "NULL"
-    timestamp expires_at "NULL, INDEX"
-    timestamp created_at
-    timestamp updated_at
-  }
+// =======================
+// FINANCE
+// =======================
 
-  SESSIONS {
-    varchar id PK
-    bigint user_id "NULL, INDEX (FK не задан миграцией)"
-    varchar ip_address "NULL"
-    text user_agent "NULL"
-    longtext payload
-    int last_activity "INDEX"
-  }
+Table charges {
+id bigint [pk]
+user_id bigint
+settlement_id bigint
+amount decimal
+currency varchar [default: 'KZT']
+type varchar                   // semester_rent / penalty
+period_start date
+period_end date
+status varchar [default: 'pending']  // pending / paid / cancelled
+created_at timestamp
+updated_at timestamp
+}
 
-  PASSWORD_RESET_TOKENS {
-    varchar email PK
-    varchar token
-    timestamp created_at "NULL"
-  }
+Table payments {
+id bigint [pk]
+charge_id bigint
+stripe_session_id varchar
+stripe_payment_intent_id varchar [null]
+amount decimal
+status varchar [default: 'pending']  // pending / succeeded / failed
+paid_at timestamp [null]
+raw_payload text [null]
+created_at timestamp
+updated_at timestamp
+}
 
-  JOBS {
-    bigint id PK
-    varchar queue "INDEX"
-    longtext payload
-    tinyint attempts
-    int reserved_at "NULL"
-    int available_at
-    int created_at
-  }
 
-  JOB_BATCHES {
-    varchar id PK
-    varchar name
-    int total_jobs
-    int pending_jobs
-    int failed_jobs
-    longtext failed_job_ids
-    mediumtext options "NULL"
-    int cancelled_at "NULL"
-    int created_at
-    int finished_at "NULL"
-  }
+// =======================
+// PENALTY (DISCIPLINE)
+// =======================
 
-  FAILED_JOBS {
-    bigint id PK
-    varchar uuid "UNIQUE"
-    text connection
-    text queue
-    longtext payload
-    longtext exception
-    timestamp failed_at "default: current"
-  }
+Table penalty_rules {
+id bigint [pk]
+code varchar                   // trash / noise / damage / etc
+title varchar
+default_points int             // +1 / +2 ...
+redeemable boolean [default: true]
+creates_financial_charge boolean [default: false]
+financial_amount decimal [null]
+created_at timestamp
+updated_at timestamp
+}
 
-  CACHE {
-    varchar key PK
-    mediumtext value
-    int expiration
-  }
+Table penalties {
+id bigint [pk]
+user_id bigint
+settlement_id bigint
+rule_id bigint
+created_by bigint              // manager/admin
+points int                     // snapshot from rule
+description text [null]
+status varchar [default: 'active'] // active / resolved / cancelled
+created_at timestamp
+updated_at timestamp
+}
 
-  CACHE_LOCKS {
-    varchar key PK
-    varchar owner
-    int expiration
-  }
+Table penalty_evidences {
+id bigint [pk]
+penalty_id bigint
+file_path varchar
+created_at timestamp
+}
 
-  USERS ||--o{ PERSONAL_ACCESS_TOKENS : tokenable
-  USERS ||--o{ SESSIONS : has_many
-```
+Table penalty_redemptions {
+id bigint [pk]
+penalty_id bigint
+user_id bigint
+event_type varchar             // субботник / уборка / помощь / etc
+description text
+file_path varchar [null]
+status varchar [default: 'pending'] // pending / approved / rejected
+reviewed_by bigint [null]
+reviewed_at timestamp [null]
+created_at timestamp
+updated_at timestamp
+}
+
+
+// =======================
+// NEWS
+// =======================
+
+Table news {
+id bigint [pk]
+title varchar
+description text
+photo varchar [null]
+created_at timestamp
+updated_at timestamp
+}
+
+
+// =======================
+// RELATIONS
+// =======================
+
+Ref: dorm_students.user_id > users.id
+
+Ref: floors.building_id > buildings.id
+Ref: rooms.floor_id > floors.id
+Ref: rooms.room_type_id > room_types.id
+
+Ref: settlements.user_id > users.id
+Ref: settlements.room_id > rooms.id
+
+Ref: request_lives.user_id > users.id
+Ref: request_lives.preferred_room_id > rooms.id
+
+Ref: request_change_rooms.student_id > dorm_students.user_id
+Ref: request_change_rooms.room_id > rooms.id
+
+Ref: documents.request_id > request_lives.id
+
+Ref: charges.user_id > users.id
+Ref: charges.settlement_id > settlements.id
+
+Ref: payments.charge_id > charges.id
+
+Ref: penalties.user_id > users.id
+Ref: penalties.settlement_id > settlements.id
+Ref: penalties.rule_id > penalty_rules.id
+Ref: penalties.created_by > users.id
+
+Ref: penalty_evidences.penalty_id > penalties.id
+
+Ref: penalty_redemptions.penalty_id > penalties.id
+Ref: penalty_redemptions.user_id > users.id
+Ref: penalty_redemptions.reviewed_by > users.id

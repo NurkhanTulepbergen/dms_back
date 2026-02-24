@@ -6,5 +6,6 @@
     "Requests": true,
     "Settlement": true,
     "Finance": true,
-    "Penalty": true
+    "Penalty": true,
+    "Gym": true
 }

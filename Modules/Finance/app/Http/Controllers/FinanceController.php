@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\DB;
 use Modules\Finance\Models\Charge;
 use Modules\Finance\Models\Payment;
 use Modules\Finance\Services\StripeService;
+use Modules\Gym\Services\GymService;
 
 class FinanceController extends Controller
 {
@@ -51,6 +52,9 @@ class FinanceController extends Controller
             $payment = Payment::where('stripe_session_id', $session->id)->first();
 
             DB::transaction(function () use ($payment, $session) {
+                if (! $payment) {
+                    return;
+                }
 
                 $payment->update([
                     'status' => 'succeeded',
@@ -62,6 +66,10 @@ class FinanceController extends Controller
                 $payment->charge->update([
                     'status' => 'paid',
                 ]);
+
+                if ($payment->charge->type === 'gym_membership') {
+                    app(GymService::class)->activateMembership($payment->charge);
+                }
             });
         }
 

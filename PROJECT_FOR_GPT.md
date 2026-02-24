@@ -62,7 +62,7 @@ Helper: `app/Helpers/result.php`
 - В модуле `Auth` есть дубли endpoint-ов без версии (`/api/login`, `/api/register`, ...).
 
 Проверка на текущий момент:
-- `php artisan route:list --path=api` => **55** API-маршрутов.
+- `php artisan route:list --path=api` => **59** API-маршрутов.
 
 ## Auth, роли и доступ
 ### Sanctum (API)
@@ -141,11 +141,16 @@ Helper: `app/Helpers/result.php`
 Ключевая логика:
 - `checkout`: только для начисления текущего пользователя со статусом `pending`; создаёт Stripe Checkout Session + запись в `payments`.
 - `webhook`: ожидает `Stripe-Signature`; при `checkout.session.completed` переводит payment в `succeeded`, charge в `paid`.
+- при `charge.type = gym_membership` webhook активирует абонемент через `GymService::activateMembership`.
 
 Stripe-конфиг:
 - `config/services.php`
   - `services.stripe.secret`
   - `services.stripe.webhook_secret`
+
+Важно по данным:
+- `room_types` хранит только классификацию и цену (`name`, `semester_price`).
+- Вместимость хранится только в `rooms.capacity`, текущее заселение в `rooms.live_cap`.
 
 ### Penalty (`Modules/Penalty`)
 Маршруты под `/api/v1/penalties` (`auth:sanctum`):
@@ -174,6 +179,27 @@ Stripe-конфиг:
   - approve => redemption `approved`, penalty `resolved`,
   - reject => redemption `rejected`.
 
+### Gym (`Modules/Gym`)
+- API под `/api/v1/gym/*` (все под `auth:sanctum`):
+  - `GET /api/v1/gym/plans`
+  - `GET /api/v1/gym/membership`
+  - `POST /api/v1/gym/checkout/{plan}`
+  - `POST /api/v1/gym/use-session`
+
+Ключевая логика:
+- `GymService::purchasePlan`:
+  - не дает купить при существующем активном абонементе,
+  - создает `charge` типа `gym_membership` (`pending`),
+  - создает Stripe checkout session и `payment`.
+- `GymService::activateMembership`:
+  - вызывается из Finance webhook после успешной оплаты gym charge,
+  - создает `gym_memberships` (`total_sessions`, `remaining_sessions`, `started_at`, `expires_at`, `status=active`).
+- `GymService::useSession`:
+  - валидирует активный и не истекший абонемент,
+  - создает `gym_visits`,
+  - уменьшает `remaining_sessions`,
+  - при `0` переводит абонемент в `expired`.
+
 ## База данных (смысловые таблицы)
 - Пользователи: `users`, `dorm_students`
 - Общежитие: `buildings`, `floors`, `rooms`
@@ -182,13 +208,15 @@ Stripe-конфиг:
 - Новости: `news`
 - Финансы: `room_types`, `charges`, `payments`
 - Дисциплина: `penalty_rules`, `penalties`, `penalty_evidences`, `penalty_redemptions`
+- Gym: `gym_plans`, `gym_memberships`, `gym_visits`
 
 Важно:
 - Историческая миграция `create_room_types_id_tables` есть, но таблица удаляется миграцией `drop_room_types_id_table`.
+- Миграция `2026_02_24_120000_drop_capacity_from_room_types_table` удаляет `room_types.capacity`.
 
 ## Статус модулей
 `modules_statuses.json`:
-- `User`, `Auth`, `News`, `Dormitory`, `Requests`, `Settlement`, `Finance`, `Penalty` = `true`
+- `User`, `Auth`, `News`, `Dormitory`, `Requests`, `Settlement`, `Finance`, `Penalty`, `Gym` = `true`
 
 ## Web-часть и отладочные роуты
 `routes/web.php` содержит:
@@ -208,6 +236,19 @@ Stripe-конфиг:
   - `nginx` (`8000:80`)
 
 Примечание: в `docker-compose.yml` для `app` указан запуск `php-fpm`, а Dockerfile/entrypoint ориентирован на `php artisan serve`; стоит держать это согласованным в дальнейшем.
+
+## Базовый сидер данных
+Файл: `database/seeders/DormitoryStructureSeeder.php`
+- Создает/обновляет здания:
+  - `Ислама Каримова, 70 к1` (`total_floors=7`, этажи `mixed`)
+  - `Ислама Каримова, 70 к2` (`total_floors=6`, этажи `female`)
+  - `Ислама Каримова, 70 к3` (`total_floors=5`, этажи `male`)
+- Создает/обновляет `room_types`:
+  - `Business` (`1000000`)
+  - `Comfort+` (`800000`)
+  - `Comfort` (`700000`)
+  - `Econom` (`500000`)
+- Создает/обновляет комнаты: по 5 комнат на этаж (`capacity=3`, `live_cap=0`, `is_active=true`).
 
 ## Что менять при развитии проекта
 - API-роуты: `Modules/*/routes/api.php`
