@@ -14,10 +14,6 @@ class RoomTypeForm
                 TextInput::make('name')
                     ->required()
                     ->maxLength(255),
-                TextInput::make('capacity')
-                    ->numeric()
-                    ->required()
-                    ->minValue(1),
                 TextInput::make('semester_price')
                     ->numeric()
                     ->required()

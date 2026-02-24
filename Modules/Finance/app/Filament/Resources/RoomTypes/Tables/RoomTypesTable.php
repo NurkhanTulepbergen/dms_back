@@ -19,8 +19,6 @@ class RoomTypesTable
                 TextColumn::make('name')
                     ->searchable()
                     ->sortable(),
-                TextColumn::make('capacity')
-                    ->sortable(),
                 TextColumn::make('semester_price')
                     ->money('KZT')
                     ->sortable(),

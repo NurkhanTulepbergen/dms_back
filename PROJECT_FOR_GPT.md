@@ -1,45 +1,48 @@
 # DMS Backend (Laravel 12) — актуальный контекст проекта для GPT
 
-Это backend системы управления общежитиями (DMS) на Laravel 12.
+Обновлено по текущему коду на **24 февраля 2026**.
 
 ## Коротко о проекте
-- Приложение: `dms/`
-- Архитектура: модульная (`nwidart/laravel-modules`)
-- Доменная логика и API: `dms/Modules/*`
-- Точка истины по проживанию: `settlements` (`end_at IS NULL` = активное проживание)
+- Это backend системы управления общежитиями (DMS).
+- Архитектура: модульная (`nwidart/laravel-modules`).
+- Основная доменная логика и API находятся в `Modules/*`.
+- Точка истины по факту проживания: таблица `settlements` (`end_at IS NULL` = активное проживание).
 
 Связанные документы:
-- `dms/ERD.md`
-- `dms/API_ENDPOINTS.md`
+- `ERD.md`
+- `API_ENDPOINTS.md`
 
 ## Стек
-- PHP: `^8.2` (`dms/composer.json`)
+- PHP: `^8.2`
 - Laravel: `^12.0`
-- Auth: Sanctum
+- Filament: `^5.2` (админ-панель)
+- Auth API: Sanctum
 - Модули: `nwidart/laravel-modules`
 - Платежи: Stripe (`stripe/stripe-php`)
 
 ## Структура репозитория
-- Корень репо содержит папку `dms/` (Laravel app)
-- `dms/app` — глобальные части приложения (helpers, middleware, exceptions)
-- `dms/Modules/*` — модульные контроллеры/сервисы/модели/роуты/миграции
-- `dms/config` — конфиги, включая `modules.php`, `services.php`
-- `dms/database/migrations` — базовые миграции Laravel
-- `dms/routes/api.php` — фактически пустой (API загружается из модулей)
+- `app/` — глобальные части приложения (helpers, middleware, модели, providers)
+- `bootstrap/app.php` — bootstrap + глобальная обработка исключений
+- `Modules/*` — модули (контроллеры, сервисы, модели, роуты, миграции, Filament-ресурсы)
+- `config/` — конфиги (`modules.php`, `services.php` и т.д.)
+- `database/` — глобальные миграции/seeders
+- `routes/api.php` — пустой (основной API загружается из модулей)
+- `routes/web.php` — web/отладочные маршруты + welcome
 
-## Bootstrap и глобальное поведение
-Файл: `dms/bootstrap/app.php`
-- Подключает helper `result()` (`require_once`)
-- Регистрирует middleware alias `role` => `App\Http\Middleware\RoleMiddleware`
-- Кастомно рендерит исключения в JSON:
+## Глобальное поведение (bootstrap)
+Файл: `bootstrap/app.php`
+- Подключает helper `result()` через `require_once app/Helpers/result.php`.
+- Регистрирует middleware alias: `role` => `App\Http\Middleware\RoleMiddleware`.
+- Кастомно рендерит JSON-ошибки для API (`api/*`):
   - `BusinessException`
   - `AuthenticationException`
-  - `NotFoundHttpException` (+ `ModelNotFoundException`)
+  - `NotFoundHttpException` (включая `ModelNotFoundException`)
+- Для web/Filament маршрутов оставляет стандартное Laravel-поведение.
 
-## Формат ответов
-Helper: `dms/app/Helpers/result.php`
+## Формат API-ответов
+Helper: `app/Helpers/result.php`
 
-Ожидаемый формат:
+Стандартный ответ:
 ```json
 {
   "status_code": 200,
@@ -48,127 +51,128 @@ Helper: `dms/app/Helpers/result.php`
 }
 ```
 
-Важно: часть контроллеров местами возвращает `response()->json()`/`response()->noContent()` напрямую, поэтому унификация не 100%.
+Важно: часть контроллеров может возвращать `response()->json()`/`response()->noContent()` напрямую, поэтому формат не везде строго унифицирован.
 
 ## Роутинг
-Все модульные `RouteServiceProvider` мапят API одинаково:
-- middleware: `api`
-- prefix: `api`
-- name prefix: `api.`
+- Каждый модульный `RouteServiceProvider` регистрирует API с:
+  - middleware: `api`
+  - prefix: `api`
+  - name prefix: `api.`
+- Практически весь продуктовый API расположен под `/api/v1/*`.
+- В модуле `Auth` есть дубли endpoint-ов без версии (`/api/login`, `/api/register`, ...).
 
-Итог:
-- Все endpoint’ы начинаются с `/api/*`
-- Большинство под `/api/v1/*`
-- Auth дублирует часть endpoint’ов без версии (`/api/login`, `/api/register`, ...)
+Проверка на текущий момент:
+- `php artisan route:list --path=api` => **55** API-маршрутов.
 
-Проверка на момент обновления:
-- `php artisan route:list --path=api` => 55 API-маршрутов
-
-## Auth и роли
-### Sanctum
-- Токены создаются в `Modules/Auth/Http/Controllers/AuthController.php`
-- Клиент использует `Authorization: Bearer <token>`
+## Auth, роли и доступ
+### Sanctum (API)
+- Токены создаются в `Modules/Auth/app/Http/Controllers/AuthController.php`.
+- Клиент использует `Authorization: Bearer <token>`.
 
 ### Роли
-- Хранятся в `users.role`
-- Проверяются middleware `role` (`dms/app/Http/Middleware/RoleMiddleware.php`)
+- Роль хранится в `users.role`.
+- API-проверки ролей идут через middleware `role`.
 
-## Доменные модули
-### Auth (`dms/Modules/Auth`)
-- register/login/logout/reset-password
-- есть v1 и default-роуты
+### Filament (админка)
+- Панель: `admin`
+- URL: `/admin`
+- Guard: `web`
+- Доступ к панели: только `admin` (см. `app/Models/User.php::canAccessPanel()`).
+- Ресурсы подгружаются из модулей: Dormitory, News, User, Settlement, Requests, Finance, Penalty.
 
-### User (`dms/Modules/User`)
+## Доменные модули (API)
+### Auth (`Modules/Auth`)
+- `register/login/logout/reset-password`
+- Есть `v1` и default-роуты без версии.
+
+### User (`Modules/User`)
 - `GET /api/v1/me`
 - `GET /api/v1/users`
 - `GET /api/v1/users/{user}`
 
-### News (`dms/Modules/News`)
-- Read: любой авторизованный
+### News (`Modules/News`)
+- Read: любой авторизованный (`auth:sanctum`)
 - Write: `role:admin,manager`
 
-### Dormitory (`dms/Modules/Dormitory`)
-- CRUD по `buildings`, `floors`, `rooms`
+### Dormitory (`Modules/Dormitory`)
+- CRUD для `buildings`, `floors`, `rooms`
 - Write-операции: `role:admin,manager`
-- Доп. роуты иерархии:
-  - `buildings/{building}/floors`
-  - `floors/{floor}/rooms`
+- Иерархические read-роуты:
+  - `GET /api/v1/buildings/{building}/floors`
+  - `GET /api/v1/floors/{floor}/rooms`
 
-Ключевые проверки в сервисах:
-- `BuildingService`: нельзя уменьшить `total_floors` ниже фактического количества этажей
-- `FloorService`: этаж не выше `building.total_floors`, уникален в пределах здания
-- `RoomService`: `live_cap <= capacity`, уникальность `room_number` в пределах этажа, `room_type_id` обязателен
+Ключевые проверки:
+- `BuildingService`: нельзя уменьшить `total_floors` ниже фактического числа этажей.
+- `FloorService`: этаж не выше `building.total_floors`, и уникален в пределах здания.
+- Filament форма этажа (`FloorForm`): при создании/редактировании `floor_number` не может быть больше `building.total_floors`.
+- `RoomService`: `live_cap <= capacity`, `room_number` уникален в пределах этажа, `room_type_id` обязателен.
 
-### Requests (`dms/Modules/Requests`)
+### Requests (`Modules/Requests`)
 - Student:
   - `POST /api/v1/requests/live`
   - `POST /api/v1/requests/change-room`
 - Manager/Admin:
-  - список + approve/reject для обоих типов заявок
+  - список + approve/reject для обоих типов заявок.
 
 Ключевая логика:
-- `RequestLiveService`
-  - запрет второй активной заявки
-  - запрет подачи при активном settlement
-  - проверка мест по активным `settlements`
-  - approve создаёт settlement через `SettlementService`
-- `RequestChangeRoomService`
-  - проверка pending-заявки
-  - approve вызывает `SettlementService::relocate`
+- `RequestLiveService`:
+  - запрет второй активной заявки,
+  - запрет подачи при активном settlement,
+  - проверка мест по активным `settlements`,
+  - approve создаёт settlement через `SettlementService`.
+- `RequestChangeRoomService`:
+  - проверка pending-заявки,
+  - approve вызывает `SettlementService::relocate`.
 
-### Settlement (`dms/Modules/Settlement`)
-- Полный `apiResource` под `/api/v1/settlements`
-- `DELETE` логически отключен (возвращает `405`)
+### Settlement (`Modules/Settlement`)
+- `Route::apiResource('settlements', ...)` под `/api/v1/settlements`.
+- `DELETE` отключен логически (возвращает `405`).
 
 `SettlementService`:
-- создаёт settlement с проверками пола, активности комнаты/этажа, gender policy, вместимости
-- закрывает settlement (`end_reason`)
-- делает переселение (`close + create`)
-- после создания settlement вызывает `ChargeService::createSemesterCharge`
+- создаёт settlement с проверками пола/активности/политики этажа/вместимости;
+- закрывает settlement (`end_reason`);
+- переселяет (`close + create`);
+- после создания вызывает `ChargeService::createSemesterCharge`.
 
-### Finance (`dms/Modules/Finance`)
+### Finance (`Modules/Finance`)
 - `POST /api/v1/finance/checkout/{charge}` (`auth:sanctum`)
 - `POST /api/v1/finance/webhook` (без auth)
 
-`checkout`:
-- только для начисления текущего пользователя со статусом `pending`
-- создаёт Stripe Session и запись в `payments`
+Ключевая логика:
+- `checkout`: только для начисления текущего пользователя со статусом `pending`; создаёт Stripe Checkout Session + запись в `payments`.
+- `webhook`: ожидает `Stripe-Signature`; при `checkout.session.completed` переводит payment в `succeeded`, charge в `paid`.
 
-`webhook`:
-- ожидает `Stripe-Signature`
-- при `checkout.session.completed` переводит payment в `succeeded`, charge в `paid`
-
-Конфиг Stripe:
-- `dms/config/services.php`
+Stripe-конфиг:
+- `config/services.php`
   - `services.stripe.secret`
   - `services.stripe.webhook_secret`
 
-### Penalty (`dms/Modules/Penalty`)
-- Маршруты под `/api/v1/penalties` (`auth:sanctum`)
+### Penalty (`Modules/Penalty`)
+Маршруты под `/api/v1/penalties` (`auth:sanctum`):
 - Student:
-  - `GET /api/v1/penalties`
-  - `GET /api/v1/penalties/{id}`
-  - `POST /api/v1/penalties/{id}/redeem`
+  - `GET /`
+  - `GET /{id}`
+  - `POST /{id}/redeem`
 - Manager/Admin:
-  - `POST /api/v1/penalties`
-  - `POST /api/v1/penalties/{id}/cancel`
-  - `POST /api/v1/penalties/redemptions/{id}/approve`
-  - `POST /api/v1/penalties/redemptions/{id}/reject`
+  - `POST /`
+  - `POST /{id}/cancel`
+  - `POST /redemptions/{id}/approve`
+  - `POST /redemptions/{id}/reject`
 
 Ключевая логика:
 - `PenaltyService`:
-  - создаёт штраф по правилу (`penalty_rules`)
-  - привязывает к активному `settlement`
-  - добавляет `penalty_evidences`
-  - при `creates_financial_charge=true` вызывает `ChargeService::createPenaltyCharge(...)`
-  - после создания запускает `DisciplinePolicyService`
+  - создаёт штраф по `penalty_rules`,
+  - привязывает к активному `settlement`,
+  - добавляет `penalty_evidences`,
+  - при `creates_financial_charge=true` вызывает `ChargeService::createPenaltyCharge(...)`,
+  - запускает `DisciplinePolicyService`.
 - `DisciplinePolicyService`:
-  - считает сумму активных баллов (`penalties.status=active`)
-  - если `active_points >= users.discipline_limit`, закрывает активное заселение (`end_reason=discipline`)
+  - считает активные баллы,
+  - при превышении `users.discipline_limit` закрывает активное заселение (`end_reason=discipline`).
 - `RedemptionService`:
-  - создаёт redemption (`pending`)
-  - approve => redemption `approved`, penalty `resolved`
-  - reject => redemption `rejected`
+  - создаёт redemption (`pending`),
+  - approve => redemption `approved`, penalty `resolved`,
+  - reject => redemption `rejected`.
 
 ## База данных (смысловые таблицы)
 - Пользователи: `users`, `dorm_students`
@@ -180,22 +184,36 @@ Helper: `dms/app/Helpers/result.php`
 - Дисциплина: `penalty_rules`, `penalties`, `penalty_evidences`, `penalty_redemptions`
 
 Важно:
-- Миграция `create_room_types_id_tables` существует исторически, но таблица удаляется миграцией `drop_room_types_id_table`.
+- Историческая миграция `create_room_types_id_tables` есть, но таблица удаляется миграцией `drop_room_types_id_table`.
 
 ## Статус модулей
-`dms/modules_statuses.json`:
+`modules_statuses.json`:
 - `User`, `Auth`, `News`, `Dormitory`, `Requests`, `Settlement`, `Finance`, `Penalty` = `true`
 
-## Docker и запуск
-- `dms/docker-compose.yml`:
-  - `app` (php-fpm)
-  - `nginx` (`8000:80`)
-- DB по умолчанию в `.env.example`: SQLite
-- В `docker-compose` и `docker/entrypoint.sh` частично дублируется bootstrap (composer install/migrate), это стоит учитывать при поддержке
+## Web-часть и отладочные роуты
+`routes/web.php` содержит:
+- `/` => `welcome`
+- debug-роуты (`/_debug/logtest`, `/_debug/filament`, `/_debug/gates`, `/_debug/buildings-access`)
 
-## Что править при изменениях
-- API роуты: `dms/Modules/*/routes/api.php`
-- Контроллеры: `dms/Modules/*/app/Http/Controllers`
-- Бизнес-логика: `dms/Modules/*/app/Services`
-- Миграции: `dms/Modules/*/database/migrations`
-- Глобальные ответы/ошибки/middleware: `dms/bootstrap/app.php`, `dms/app/*`
+Важно: debug-маршруты лучше отключать в production.
+
+## Docker и запуск
+- `Dockerfile` собирает PHP 8.4 CLI образ, ставит зависимости, запускает `/entrypoint.sh`.
+- `entrypoint.sh`:
+  - чистит/кеширует конфиг,
+  - выполняет `php artisan migrate --force`,
+  - поднимает `php artisan serve --host=0.0.0.0 --port=${PORT:-8080}`.
+- `docker-compose.yml`:
+  - `app` (build из текущего проекта)
+  - `nginx` (`8000:80`)
+
+Примечание: в `docker-compose.yml` для `app` указан запуск `php-fpm`, а Dockerfile/entrypoint ориентирован на `php artisan serve`; стоит держать это согласованным в дальнейшем.
+
+## Что менять при развитии проекта
+- API-роуты: `Modules/*/routes/api.php`
+- Web-роуты: `routes/web.php`, `Modules/*/routes/web.php`
+- Контроллеры: `Modules/*/app/Http/Controllers`
+- Бизнес-логика: `Modules/*/app/Services`
+- Миграции: `Modules/*/database/migrations`, `database/migrations`
+- Админка Filament: `app/Providers/Filament/AdminPanelProvider.php`, `Modules/*/app/Filament/Resources`
+- Глобальные ответы/исключения/middleware: `bootstrap/app.php`, `app/Helpers/result.php`, `app/Http/Middleware/*`
