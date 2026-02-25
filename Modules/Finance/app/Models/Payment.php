@@ -17,6 +17,7 @@ class Payment extends Model
         'raw_payload',
     ];
 
+
     protected $casts = [
         'raw_payload' => 'array',
         'paid_at' => 'datetime',
