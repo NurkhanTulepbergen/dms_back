@@ -36,6 +36,8 @@ class StripeService
             );
         }
 
+        $frontendUrl = rtrim((string) config('app.frontend_url', config('app.url')), '/');
+
         return Session::create([
             'payment_method_types' => ['card'],
             'mode' => 'payment',
@@ -49,8 +51,8 @@ class StripeService
                 ],
                 'quantity' => 1,
             ]],
-            'success_url' => config('app.url') . '/payment-success',
-            'cancel_url' => config('app.url') . '/payment-cancel',
+            'success_url' => $frontendUrl . '/payment-success',
+            'cancel_url' => $frontendUrl . '/payment-cancel',
             'metadata' => [
                 'charge_id' => $charge->id,
             ],

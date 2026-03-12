@@ -35,6 +35,21 @@ class FinanceController extends Controller
                 ->where('status', 'pending')
                 ->firstOrFail();
 
+            $amount = (float) $charge->amount;
+            $currency = strtolower((string) ($charge->currency ?? 'kzt'));
+
+            if ($amount <= 0) {
+                return result(null, 422, 'Сумма начисления должна быть больше 0');
+            }
+
+            if ($currency === 'kzt' && $amount > 999999.99) {
+                return result(
+                    null,
+                    422,
+                    'Сумма слишком большая для оплаты в KZT через Stripe Checkout (максимум 999 999.99 KZT). Разбейте начисление на несколько платежей.'
+                );
+            }
+
             $stripe = app(StripeService::class);
             $session = $stripe->createCheckoutSession($charge);
 
