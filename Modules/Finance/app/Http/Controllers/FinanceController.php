@@ -12,6 +12,16 @@ use Modules\Gym\Services\GymService;
 
 class FinanceController extends Controller
 {
+    public function charges(Request $request)
+    {
+        $charges = Charge::query()
+            ->where('user_id', $request->user()->id)
+            ->orderByDesc('id')
+            ->get();
+
+        return result($charges, 200, 'Начисления получены');
+    }
+
     public function checkout($chargeId)
     {
         $charge = Charge::where('id', $chargeId)

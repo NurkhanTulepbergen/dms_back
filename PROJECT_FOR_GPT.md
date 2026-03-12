@@ -1,6 +1,6 @@
 # DMS Backend (Laravel 12) — актуальный контекст проекта для GPT
 
-Обновлено по текущему коду на **24 февраля 2026**.
+Обновлено по текущему коду на **10 марта 2026**.
 
 ## Коротко о проекте
 - Это backend системы управления общежитиями (DMS).
@@ -62,7 +62,7 @@ Helper: `app/Helpers/result.php`
 - В модуле `Auth` есть дубли endpoint-ов без версии (`/api/login`, `/api/register`, ...).
 
 Проверка на текущий момент:
-- `php artisan route:list --path=api` => **59** API-маршрутов.
+- `php artisan route:list --path=api` => **60** API-маршрутов.
 
 ## Auth, роли и доступ
 ### Sanctum (API)
@@ -126,6 +126,7 @@ Helper: `app/Helpers/result.php`
 
 ### Settlement (`Modules/Settlement`)
 - `Route::apiResource('settlements', ...)` под `/api/v1/settlements`.
+- Дополнительный endpoint статуса проживания: `GET /api/v1/showStatus/{userId}`.
 - `DELETE` отключен логически (возвращает `405`).
 
 `SettlementService`:

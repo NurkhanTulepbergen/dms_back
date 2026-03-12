@@ -1,7 +1,7 @@
 # DMS API Endpoints
 
-Документ синхронизирован с текущим кодом проекта на **24 февраля 2026**.
-Проверка: `php artisan route:list --path=api` => **59** маршрутов.
+Документ синхронизирован с текущим кодом проекта на **10 марта 2026**.
+Проверка: `php artisan route:list --path=api` => **60** маршрутов.
 
 ## Базовая информация
 - Общий префикс модульных роутов: `/api`
@@ -243,6 +243,7 @@ Body `POST /api/v1/requests/change-room`:
 - `GET /api/v1/settlements/{settlement}`
 - `PUT/PATCH /api/v1/settlements/{settlement}`
 - `DELETE /api/v1/settlements/{settlement}`
+- `GET /api/v1/showStatus/{userId}`
 
 Body `POST /api/v1/settlements`:
 ```json
@@ -332,7 +333,7 @@ Body `PUT/PATCH /api/v1/settlements/{id}`:
 `POST /api/v1/gym/checkout/{plan}`:
 - создает `charges` запись типа `gym_membership` со статусом `pending`
 - создает Stripe checkout session и `payments` запись
-- возвращает `checkout_url`
+- возвращает `url` для редиректа на Stripe Checkout
 
 `POST /api/v1/gym/use-session`:
 - требует активный и не истекший абонемент
