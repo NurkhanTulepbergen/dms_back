@@ -5,12 +5,19 @@ namespace Modules\Finance\Services;
 use Modules\Finance\Models\Charge;
 use Stripe\Stripe;
 use Stripe\Checkout\Session;
+use RuntimeException;
 
 class StripeService
 {
     public function createCheckoutSession(Charge $charge)
     {
-        Stripe::setApiKey(config('services.stripe.secret'));
+        $secret = config('services.stripe.secret');
+
+        if (empty($secret)) {
+            throw new RuntimeException('Stripe secret key is not configured');
+        }
+
+        Stripe::setApiKey($secret);
 
         return Session::create([
             'payment_method_types' => ['card'],
@@ -21,7 +28,7 @@ class StripeService
                     'product_data' => [
                         'name' => 'Dormitory Semester Fee',
                     ],
-                    'unit_amount' => $charge->amount * 100,
+                    'unit_amount' => (int) round(((float) $charge->amount) * 100),
                 ],
                 'quantity' => 1,
             ]],

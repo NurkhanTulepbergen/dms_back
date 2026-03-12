@@ -4,11 +4,14 @@ namespace Modules\Finance\Http\Controllers;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Modules\Finance\Models\Charge;
 use Modules\Finance\Models\Payment;
 use Modules\Finance\Services\StripeService;
 use Modules\Gym\Services\GymService;
+use Throwable;
 
 class FinanceController extends Controller
 {
@@ -24,23 +27,35 @@ class FinanceController extends Controller
 
     public function checkout($chargeId)
     {
-        $charge = Charge::where('id', $chargeId)
-            ->where('user_id', auth()->id())
-            ->where('status', 'pending')
-            ->firstOrFail();
+        try {
+            $charge = Charge::where('id', $chargeId)
+                ->where('user_id', auth()->id())
+                ->where('status', 'pending')
+                ->firstOrFail();
 
-        $stripe = app(StripeService::class);
-        $session = $stripe->createCheckoutSession($charge);
+            $stripe = app(StripeService::class);
+            $session = $stripe->createCheckoutSession($charge);
 
-        Payment::create([
-            'charge_id' => $charge->id,
-            'stripe_session_id' => $session->id,
-            'amount' => $charge->amount,
-        ]);
+            Payment::create([
+                'charge_id' => $charge->id,
+                'stripe_session_id' => $session->id,
+                'amount' => $charge->amount,
+            ]);
 
-        return result([
-            'url' => $session->url
-        ]);
+            return result([
+                'url' => $session->url
+            ]);
+        } catch (ModelNotFoundException) {
+            return result(null, 404, 'Начисление не найдено или уже оплачено');
+        } catch (Throwable $e) {
+            Log::error('Finance checkout failed', [
+                'charge_id' => $chargeId,
+                'user_id' => auth()->id(),
+                'message' => $e->getMessage(),
+            ]);
+
+            return result(null, 500, 'Не удалось создать Stripe checkout. Проверьте настройки Stripe.');
+        }
     }
 
     public function webhook(Request $request)
