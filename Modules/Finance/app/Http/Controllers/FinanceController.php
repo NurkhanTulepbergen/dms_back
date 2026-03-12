@@ -2,6 +2,7 @@
 
 namespace Modules\Finance\Http\Controllers;
 
+use App\Exceptions\BusinessException;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
@@ -11,6 +12,7 @@ use Modules\Finance\Models\Charge;
 use Modules\Finance\Models\Payment;
 use Modules\Finance\Services\StripeService;
 use Modules\Gym\Services\GymService;
+use Stripe\Exception\InvalidRequestException;
 use Throwable;
 
 class FinanceController extends Controller
@@ -47,6 +49,16 @@ class FinanceController extends Controller
             ]);
         } catch (ModelNotFoundException) {
             return result(null, 404, 'Начисление не найдено или уже оплачено');
+        } catch (BusinessException $e) {
+            return result(null, $e->status_code, $e->getMessage());
+        } catch (InvalidRequestException $e) {
+            Log::warning('Finance checkout validation failed', [
+                'charge_id' => $chargeId,
+                'user_id' => auth()->id(),
+                'message' => $e->getMessage(),
+            ]);
+
+            return result(null, 422, $e->getMessage());
         } catch (Throwable $e) {
             Log::error('Finance checkout failed', [
                 'charge_id' => $chargeId,
