@@ -412,7 +412,10 @@ class GymService
         $previousWeek = null;
 
         foreach ($weekKeys as $weekKey) {
-            $currentWeek = Carbon::createFromFormat('o-W', $weekKey, config('app.timezone'))
+            [$year, $week] = array_map('intval', explode('-', (string) $weekKey));
+
+            $currentWeek = now()
+                ->setISODate($year, $week)
                 ->startOfWeek(CarbonInterface::MONDAY);
 
             if ($previousWeek && $previousWeek->copy()->addWeek()->equalTo($currentWeek)) {
