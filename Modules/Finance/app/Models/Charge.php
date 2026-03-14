@@ -12,6 +12,7 @@ class Charge extends Model
     protected $fillable = [
         'user_id',
         'settlement_id',
+        'gym_plan_id',
         'amount',
         'currency',
         'type',

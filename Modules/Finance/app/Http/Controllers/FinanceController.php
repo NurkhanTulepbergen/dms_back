@@ -15,7 +15,7 @@ use Modules\Gym\Services\GymService;
 use Stripe\Exception\InvalidRequestException;
 use Throwable;
 
-class FinanceController extends Controller
+class  FinanceController extends Controller
 {
     public function charges(Request $request)
     {

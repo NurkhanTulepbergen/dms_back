@@ -12,7 +12,7 @@ class StripeService
 {
     private const MAX_KZT_AMOUNT = 999999.99;
 
-    public function createCheckoutSession(Charge $charge)
+    public function createCheckoutSession(Charge $charge, array $options = [])
     {
         $secret = config('services.stripe.secret');
 
@@ -37,6 +37,12 @@ class StripeService
         }
 
         $frontendUrl = rtrim((string) config('app.frontend_url', config('app.url')), '/');
+        $successUrl = $options['success_url'] ?? ($frontendUrl . '/payment-success');
+        $cancelUrl = $options['cancel_url'] ?? ($frontendUrl . '/payment-cancel');
+        $productName = $options['product_name'] ?? 'Dormitory Semester Fee';
+        $metadata = array_merge([
+            'charge_id' => $charge->id,
+        ], $options['metadata'] ?? []);
 
         return Session::create([
             'payment_method_types' => ['card'],
@@ -45,17 +51,15 @@ class StripeService
                 'price_data' => [
                     'currency' => $currency,
                     'product_data' => [
-                        'name' => 'Dormitory Semester Fee',
+                        'name' => $productName,
                     ],
                     'unit_amount' => (int) round($amount * 100),
                 ],
                 'quantity' => 1,
             ]],
-            'success_url' => $frontendUrl . '/payment-success',
-            'cancel_url' => $frontendUrl . '/payment-cancel',
-            'metadata' => [
-                'charge_id' => $charge->id,
-            ],
+            'success_url' => $successUrl,
+            'cancel_url' => $cancelUrl,
+            'metadata' => $metadata,
         ]);
     }
 }

@@ -31,9 +31,12 @@ class GymService
         }
 
         return DB::transaction(function () use ($user, $plan): array {
+            $frontendUrl = rtrim((string) config('app.frontend_url', config('app.url')), '/');
+
             $charge = Charge::create([
                 'user_id' => $user->id,
                 'settlement_id' => null,
+                'gym_plan_id' => $plan->id,
                 'amount' => $plan->price,
                 'currency' => 'KZT',
                 'type' => 'gym_membership',
@@ -42,7 +45,15 @@ class GymService
                 'status' => 'pending',
             ]);
 
-            $session = app(StripeService::class)->createCheckoutSession($charge);
+            $session = app(StripeService::class)->createCheckoutSession($charge, [
+                'product_name' => $plan->name,
+                'success_url' => $frontendUrl . '/payment-success?source=gym',
+                'cancel_url' => $frontendUrl . '/payment-cancel?source=gym',
+                'metadata' => [
+                    'gym_plan_id' => $plan->id,
+                    'source' => 'gym',
+                ],
+            ]);
 
             Payment::create([
                 'charge_id' => $charge->id,
@@ -63,18 +74,11 @@ class GymService
             throw new BusinessException('Charge type is not gym_membership', 422);
         }
 
-        $plansByAmount = GymPlan::query()
-            ->where('price', $charge->amount)
-            ->orderByDesc('id')
-            ->get();
+        $plan = GymPlan::query()->find($charge->gym_plan_id);
 
-        if ($plansByAmount->isEmpty()) {
-            throw new BusinessException('Gym plan not found for charge amount', 422);
+        if (! $plan) {
+            throw new BusinessException('Gym plan not found for charge', 422);
         }
-        if ($plansByAmount->count() > 1) {
-            throw new BusinessException('Multiple gym plans found for charge amount', 422);
-        }
-        $plan = $plansByAmount->first();
 
         return DB::transaction(function () use ($charge, $plan): GymMembership {
             $membership = GymMembership::query()->where('charge_id', $charge->id)->first();
