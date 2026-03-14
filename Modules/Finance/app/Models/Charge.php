@@ -4,6 +4,7 @@ namespace Modules\Finance\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Modules\Settlement\Models\Settlement;
+use Modules\Gym\Models\GymPlan;
 use Modules\User\Models\User;
 
 
@@ -39,5 +40,10 @@ class Charge extends Model
     public function payments()
     {
         return $this->hasMany(Payment::class);
+    }
+
+    public function gymPlan()
+    {
+        return $this->belongsTo(GymPlan::class, 'gym_plan_id');
     }
 }

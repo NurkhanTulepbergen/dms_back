@@ -22,6 +22,8 @@ class GymMembership extends Model
     protected $casts = [
         'started_at' => 'date',
         'expires_at' => 'date',
+        'total_sessions' => 'integer',
+        'remaining_sessions' => 'integer',
     ];
 
     public function user()
@@ -44,4 +46,3 @@ class GymMembership extends Model
         return $this->hasMany(GymVisit::class, 'membership_id');
     }
 }
-

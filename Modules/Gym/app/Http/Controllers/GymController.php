@@ -27,11 +27,15 @@ class GymController extends Controller
 
     public function membership(Request $request)
     {
-        $membership = $this->gymService->getCurrentMembership($request->user());
+        $user = $request->user();
+        $membership = $this->gymService->getCurrentMembership($user);
+        $activeVisit = $this->gymService->getActiveVisit($user);
 
         if (! $membership) {
             return result([
                 'has_membership' => false,
+                'has_active_visit' => (bool) $activeVisit,
+                'active_visit' => $this->gymService->presentVisit($activeVisit),
             ], 200, 'Gym membership');
         }
 
@@ -40,24 +44,36 @@ class GymController extends Controller
             'remaining_sessions' => (int) $membership->remaining_sessions,
             'expires_at' => $membership->expires_at?->toDateString(),
             'status' => $membership->status,
+            'has_active_visit' => (bool) $activeVisit,
+            'active_visit' => $this->gymService->presentVisit($activeVisit),
         ], 200, 'Gym membership');
     }
 
-    public function checkout(Request $request, GymPlan $plan)
+    public function createCheckout(Request $request, GymPlan $plan)
     {
         $payload = $this->gymService->purchasePlan($request->user(), $plan);
 
         return result($payload, 200, 'Gym checkout created');
     }
 
-    public function useSession(Request $request)
+    public function checkIn(Request $request)
     {
-        $membership = $this->gymService->useSession($request->user());
+        $payload = $this->gymService->checkIn($request->user());
 
-        return result([
-            'remaining_sessions' => (int) $membership->remaining_sessions,
-            'expires_at' => $membership->expires_at?->toDateString(),
-            'status' => $membership->status,
-        ], 200, 'Gym session used');
+        return result($payload, 200, 'Gym check-in completed');
+    }
+
+    public function completeVisit(Request $request)
+    {
+        $payload = $this->gymService->checkOut($request->user());
+
+        return result($payload, 200, 'Gym check-out completed');
+    }
+
+    public function stats(Request $request)
+    {
+        $payload = $this->gymService->getStats($request->user());
+
+        return result($payload, 200, 'Gym statistics');
     }
 }

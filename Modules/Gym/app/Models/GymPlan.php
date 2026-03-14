@@ -3,6 +3,7 @@
 namespace Modules\Gym\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Modules\Finance\Models\Charge;
 
 class GymPlan extends Model
 {
@@ -23,5 +24,9 @@ class GymPlan extends Model
     {
         return $this->hasMany(GymMembership::class, 'plan_id');
     }
-}
 
+    public function charges()
+    {
+        return $this->hasMany(Charge::class, 'gym_plan_id');
+    }
+}
