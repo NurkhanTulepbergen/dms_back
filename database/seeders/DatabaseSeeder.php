@@ -5,6 +5,7 @@ namespace Database\Seeders;
 use Modules\User\Models\User;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
+use Modules\Gym\Database\Seeders\GymDatabaseSeeder;
 
 class DatabaseSeeder extends Seeder
 {
@@ -17,6 +18,7 @@ class DatabaseSeeder extends Seeder
     {
         $this->call([
             DormitoryStructureSeeder::class,
+            GymDatabaseSeeder::class,
         ]);
 
         // User::factory(10)->create();

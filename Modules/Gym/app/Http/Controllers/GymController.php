@@ -15,6 +15,8 @@ class GymController extends Controller
 
     public function plans()
     {
+        $this->gymService->ensureDefaultPlansExist();
+
         $plans = GymPlan::query()
             ->where('is_active', true)
             ->orderBy('price')
@@ -59,4 +61,3 @@ class GymController extends Controller
         ], 200, 'Gym session used');
     }
 }
-

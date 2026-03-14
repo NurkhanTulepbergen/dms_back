@@ -14,6 +14,21 @@ use Modules\User\Models\User;
 
 class GymService
 {
+    public function ensureDefaultPlansExist(): void
+    {
+        if (GymPlan::query()->exists()) {
+            return;
+        }
+
+        GymPlan::query()->create([
+            'name' => 'Месячный абонемент',
+            'total_sessions' => 12,
+            'price' => 10000,
+            'duration_days' => 30,
+            'is_active' => true,
+        ]);
+    }
+
     public function purchasePlan(User $user, GymPlan $plan): array
     {
         if (! $plan->is_active) {
