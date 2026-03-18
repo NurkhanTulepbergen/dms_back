@@ -78,7 +78,7 @@ Helper: `app/Helpers/result.php`
 - URL: `/admin`
 - Guard: `web`
 - Доступ к панели: только `admin` (см. `app/Models/User.php::canAccessPanel()`).
-- Ресурсы подгружаются из модулей: Dormitory, News, User, Settlement, Requests, Finance, Penalty.
+- Ресурсы подгружаются из модулей: Dormitory, News, User, Settlement, Requests, Finance, Penalty, Gym.
 
 ## Доменные модули (API)
 ### Auth (`Modules/Auth`)

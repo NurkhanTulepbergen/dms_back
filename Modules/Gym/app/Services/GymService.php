@@ -501,4 +501,6 @@ class GymService
             'is_active' => (bool) $plan->is_active,
         ];
     }
+
+
 }
