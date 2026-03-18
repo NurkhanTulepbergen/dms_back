@@ -19,8 +19,11 @@ class  FinanceController extends Controller
 {
     public function charges(Request $request)
     {
+        app(GymService::class)->cleanupPendingChargesForUser($request->user());
+
         $charges = Charge::query()
             ->where('user_id', $request->user()->id)
+            ->where('status', '!=', 'cancelled')
             ->orderByDesc('id')
             ->get();
 

@@ -55,6 +55,8 @@ class GymService
         }
 
         return DB::transaction(function () use ($user, $plan): array {
+            $this->cancelPendingChargesForUserId($user->id);
+
             $frontendUrl = rtrim((string) config('app.frontend_url', config('app.url')), '/');
 
             $charge = Charge::create([
@@ -111,7 +113,7 @@ class GymService
                 return $membership;
             }
 
-            return GymMembership::create([
+            $membership = GymMembership::create([
                 'user_id' => $charge->user_id,
                 'plan_id' => $plan->id,
                 'charge_id' => $charge->id,
@@ -121,7 +123,28 @@ class GymService
                 'expires_at' => now()->addDays((int) $plan->duration_days)->toDateString(),
                 'status' => self::MEMBERSHIP_STATUS_ACTIVE,
             ]);
+
+            $this->cancelPendingChargesForUserId($charge->user_id, $charge->id);
+
+            return $membership;
         });
+    }
+
+    public function cleanupPendingChargesForUser(User $user): void
+    {
+        $this->syncMembershipStatusesForUser($user);
+
+        $hasActiveMembership = GymMembership::query()
+            ->where('user_id', $user->id)
+            ->whereIn('status', [self::MEMBERSHIP_STATUS_ACTIVE, self::MEMBERSHIP_STATUS_EXHAUSTED])
+            ->whereDate('expires_at', '>=', now()->toDateString())
+            ->exists();
+
+        if (! $hasActiveMembership) {
+            return;
+        }
+
+        $this->cancelPendingChargesForUserId($user->id);
     }
 
     public function checkIn(User $user): array
@@ -399,6 +422,37 @@ class GymService
             ->map(fn (GymPlan $plan) => $this->formatPlan($plan))
             ->values()
             ->all();
+    }
+
+    private function cancelPendingChargesForUserId(int $userId, ?int $exceptChargeId = null): void
+    {
+        $query = Charge::query()
+            ->where('user_id', $userId)
+            ->where('type', 'gym_membership')
+            ->where('status', 'pending');
+
+        if ($exceptChargeId !== null) {
+            $query->where('id', '!=', $exceptChargeId);
+        }
+
+        $chargeIds = $query->pluck('id');
+
+        if ($chargeIds->isEmpty()) {
+            return;
+        }
+
+        Charge::query()
+            ->whereIn('id', $chargeIds)
+            ->update([
+                'status' => 'cancelled',
+            ]);
+
+        Payment::query()
+            ->whereIn('charge_id', $chargeIds)
+            ->where('status', 'pending')
+            ->update([
+                'status' => 'cancelled',
+            ]);
     }
 
     private function calculateCurrentWeekStreak(Collection $weekKeys): int
