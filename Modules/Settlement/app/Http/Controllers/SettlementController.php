@@ -41,18 +41,23 @@ class SettlementController extends Controller
 
     public function showStatus(int $userId)
     {
-        $settlement = Settlement::query()
-            ->with(['user', 'room.floor.building'])
-            ->where('user_id', $userId)
-            ->where('status', 'active')
-            ->whereNull('end_at')
-            ->latest('start_at')
-            ->first();
+        $settlement = $this->settlementService->getActiveSettlement($userId, [
+            'user',
+            'room.floor.building',
+        ]);
 
         return result([
             'is_living' => (bool) $settlement,
             'settlement' => $settlement,
         ], 200, 'Settlement status');
+    }
+
+    public function isLiving(int $userId)
+    {
+        return result([
+            'user_id' => $userId,
+            'is_living' => $this->settlementService->isUserLivingInDormitory($userId),
+        ], 200, 'Student living status');
     }
 
     /**

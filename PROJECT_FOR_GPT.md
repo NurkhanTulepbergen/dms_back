@@ -126,10 +126,13 @@ Helper: `app/Helpers/result.php`
 
 ### Settlement (`Modules/Settlement`)
 - `Route::apiResource('settlements', ...)` под `/api/v1/settlements`.
+- Отдельный boolean endpoint статуса проживания: `GET /api/v1/settlements/is-living/{userId}`.
 - Дополнительный endpoint статуса проживания: `GET /api/v1/showStatus/{userId}`.
 - `DELETE` отключен логически (возвращает `405`).
 
 `SettlementService`:
+- `getActiveSettlement()` возвращает активное проживание пользователя или `null`;
+- `isUserLivingInDormitory()` возвращает `bool`, проживает ли пользователь сейчас;
 - создаёт settlement с проверками пола/активности/политики этажа/вместимости;
 - закрывает settlement (`end_reason`);
 - переселяет (`close + create`);

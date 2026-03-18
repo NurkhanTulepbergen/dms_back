@@ -25,6 +25,22 @@ class SettlementService
     public const END_REASON_RELOCATION = 'relocation';
     public const END_REASON_PERSONAL = 'personal';
 
+    public function getActiveSettlement(int $userId, array $with = []): ?Settlement
+    {
+        return Settlement::query()
+            ->with($with)
+            ->where('user_id', $userId)
+            ->where('status', self::STATUS_ACTIVE)
+            ->whereNull('end_at')
+            ->latest('start_at')
+            ->first();
+    }
+
+    public function isUserLivingInDormitory(int $userId): bool
+    {
+        return $this->getActiveSettlement($userId) !== null;
+    }
+
     public function createSettlement(int $userId, int $roomId, string $source): Settlement
     {
         if (!in_array($source, [

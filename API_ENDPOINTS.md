@@ -238,6 +238,7 @@ Body `POST /api/v1/requests/change-room`:
 Файл: `Modules/Settlement/routes/api.php`
 
 Под `auth:sanctum`:
+- `GET /api/v1/settlements/is-living/{userId}`
 - `GET /api/v1/settlements`
 - `POST /api/v1/settlements`
 - `GET /api/v1/settlements/{settlement}`
@@ -265,6 +266,18 @@ Body `PUT/PATCH /api/v1/settlements/{id}`:
 ```
 
 Примечание: `DELETE` возвращает `405` (история хранится в `settlements`).
+
+`GET /api/v1/settlements/is-living/{userId}`:
+```json
+{
+  "status_code": 200,
+  "message": "Student living status",
+  "data": {
+    "user_id": 10,
+    "is_living": true
+  }
+}
+```
 
 ## Finance
 Файл: `Modules/Finance/routes/api.php`
