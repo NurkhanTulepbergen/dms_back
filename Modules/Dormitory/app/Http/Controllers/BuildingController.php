@@ -32,7 +32,10 @@ class BuildingController extends Controller
     public function store(Request $request)
     {
         $validated = $request->validate([
+            'name' => 'nullable|string|max:255',
             'address' => 'required|string|max:255',
+            'latitude' => 'nullable|numeric|between:-90,90',
+            'longitude' => 'nullable|numeric|between:-180,180',
             'total_floors' => 'required|integer|min:1|max:100',
         ]);
 
@@ -45,7 +48,10 @@ class BuildingController extends Controller
     public function update(Request $request, Building $building)
     {
         $validated = $request->validate([
+            'name' => 'nullable|string|max:255',
             'address' => 'required|string|max:255',
+            'latitude' => 'nullable|numeric|between:-90,90',
+            'longitude' => 'nullable|numeric|between:-180,180',
             'total_floors' => 'required|integer|min:1|max:100',
         ]);
 
@@ -62,4 +68,3 @@ class BuildingController extends Controller
     }
 
 }
-

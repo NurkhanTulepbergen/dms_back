@@ -1,15 +1,27 @@
 <?php
 
 namespace Modules\Dormitory\Models;
+
 use Illuminate\Database\Eloquent\Model;
+
 class Building extends Model
 {
     protected $fillable = [
+        'name',
         'address',
-        'total_floors'
+        'latitude',
+        'longitude',
+        'total_floors',
     ];
 
-    public function floors() {
+    protected $casts = [
+        'latitude' => 'float',
+        'longitude' => 'float',
+        'total_floors' => 'integer',
+    ];
+
+    public function floors()
+    {
         return $this->hasMany(Floor::class);
     }
 }

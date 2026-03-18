@@ -16,8 +16,15 @@ class BuildingsTable
             ->columns([
                 TextColumn::make('id')
                     ->sortable(),
+                TextColumn::make('name')
+                    ->searchable()
+                    ->sortable(),
                 TextColumn::make('address')
                     ->searchable()
+                    ->sortable(),
+                TextColumn::make('latitude')
+                    ->sortable(),
+                TextColumn::make('longitude')
                     ->sortable(),
                 TextColumn::make('total_floors')
                     ->label('Floors')
