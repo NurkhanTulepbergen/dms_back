@@ -17,6 +17,30 @@ use Modules\User\Models\User;
 
 class GymService
 {
+    private const DEFAULT_PLANS = [
+        [
+            'name' => 'Пробный абонемент',
+            'total_sessions' => 4,
+            'price' => 4000,
+            'duration_days' => 14,
+            'is_active' => true,
+        ],
+        [
+            'name' => 'Месячный абонемент',
+            'total_sessions' => 12,
+            'price' => 10000,
+            'duration_days' => 30,
+            'is_active' => true,
+        ],
+        [
+            'name' => 'Расширенный абонемент',
+            'total_sessions' => 24,
+            'price' => 18000,
+            'duration_days' => 60,
+            'is_active' => true,
+        ],
+    ];
+
     private const MEMBERSHIP_STATUS_ACTIVE = 'active';
     private const MEMBERSHIP_STATUS_EXPIRED = 'expired';
     private const MEMBERSHIP_STATUS_CANCELLED = 'cancelled';
@@ -29,17 +53,23 @@ class GymService
 
     public function ensureDefaultPlansExist(): void
     {
-        if (GymPlan::query()->exists()) {
-            return;
+        foreach (self::DEFAULT_PLANS as $plan) {
+            GymPlan::query()->firstOrCreate(
+                ['name' => $plan['name']],
+                $plan,
+            );
         }
+    }
 
-        GymPlan::query()->create([
-            'name' => 'Месячный абонемент',
-            'total_sessions' => 12,
-            'price' => 10000,
-            'duration_days' => 30,
-            'is_active' => true,
-        ]);
+    public function getAvailablePlans(): Collection
+    {
+        $this->ensureDefaultPlansExist();
+
+        return GymPlan::query()
+            ->where('is_active', true)
+            ->orderBy('price')
+            ->orderBy('total_sessions')
+            ->get();
     }
 
     public function purchasePlan(User $user, GymPlan $plan): array
@@ -94,6 +124,7 @@ class GymService
             return [
                 'charge_id' => $charge->id,
                 'checkout_url' => $session->url,
+                'plan' => $this->formatPlan($plan),
             ];
         });
     }
@@ -169,6 +200,7 @@ class GymService
         $this->syncMembershipStatusesForUser($user);
 
         return GymMembership::query()
+            ->with('plan')
             ->where('user_id', $user->id)
             ->whereIn('status', [
                 self::MEMBERSHIP_STATUS_ACTIVE,
@@ -352,12 +384,26 @@ class GymService
 
     private function formatMembership(GymMembership $membership): array
     {
+        $membership->loadMissing('plan');
+
         return [
             'id' => $membership->id,
+            'plan' => $membership->plan ? $this->formatPlan($membership->plan) : null,
+            'total_sessions' => (int) $membership->total_sessions,
             'remaining_sessions' => (int) $membership->remaining_sessions,
+            'started_at' => $membership->started_at?->toDateString(),
             'expires_at' => $membership->expires_at?->toDateString(),
             'status' => $membership->status,
         ];
+    }
+
+    public function presentMembership(?GymMembership $membership): ?array
+    {
+        if (! $membership) {
+            return null;
+        }
+
+        return $this->formatMembership($membership);
     }
 
     private function formatVisit(GymVisit $visit): array
@@ -381,6 +427,14 @@ class GymService
         }
 
         return $this->formatVisit($visit);
+    }
+
+    public function presentPlans(Collection $plans): array
+    {
+        return $plans
+            ->map(fn (GymPlan $plan) => $this->formatPlan($plan))
+            ->values()
+            ->all();
     }
 
     private function calculateCurrentWeekStreak(Collection $weekKeys): int
@@ -434,5 +488,17 @@ class GymService
     private function weekKey(CarbonInterface $date): string
     {
         return $date->copy()->startOfWeek(CarbonInterface::MONDAY)->format('o-W');
+    }
+
+    private function formatPlan(GymPlan $plan): array
+    {
+        return [
+            'id' => $plan->id,
+            'name' => $plan->name,
+            'total_sessions' => (int) $plan->total_sessions,
+            'duration_days' => (int) $plan->duration_days,
+            'price' => (float) $plan->price,
+            'is_active' => (bool) $plan->is_active,
+        ];
     }
 }

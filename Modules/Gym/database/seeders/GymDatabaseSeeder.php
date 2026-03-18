@@ -3,7 +3,7 @@
 namespace Modules\Gym\Database\Seeders;
 
 use Illuminate\Database\Seeder;
-use Modules\Gym\Models\GymPlan;
+use Modules\Gym\Services\GymService;
 
 class GymDatabaseSeeder extends Seeder
 {
@@ -12,14 +12,6 @@ class GymDatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        GymPlan::query()->updateOrCreate(
-            ['name' => 'Месячный абонемент'],
-            [
-                'total_sessions' => 12,
-                'price' => 10000,
-                'duration_days' => 30,
-                'is_active' => true,
-            ]
-        );
+        app(GymService::class)->ensureDefaultPlansExist();
     }
 }

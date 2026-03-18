@@ -15,14 +15,9 @@ class GymController extends Controller
 
     public function plans()
     {
-        $this->gymService->ensureDefaultPlansExist();
+        $plans = $this->gymService->getAvailablePlans();
 
-        $plans = GymPlan::query()
-            ->where('is_active', true)
-            ->orderBy('price')
-            ->get();
-
-        return result($plans, 200, 'Gym plans');
+        return result($this->gymService->presentPlans($plans), 200, 'Gym plans');
     }
 
     public function membership(Request $request)
@@ -30,10 +25,13 @@ class GymController extends Controller
         $user = $request->user();
         $membership = $this->gymService->getCurrentMembership($user);
         $activeVisit = $this->gymService->getActiveVisit($user);
+        $availablePlans = $this->gymService->presentPlans($this->gymService->getAvailablePlans());
 
         if (! $membership) {
             return result([
                 'has_membership' => false,
+                'membership' => null,
+                'available_plans' => $availablePlans,
                 'has_active_visit' => (bool) $activeVisit,
                 'active_visit' => $this->gymService->presentVisit($activeVisit),
             ], 200, 'Gym membership');
@@ -41,9 +39,8 @@ class GymController extends Controller
 
         return result([
             'has_membership' => true,
-            'remaining_sessions' => (int) $membership->remaining_sessions,
-            'expires_at' => $membership->expires_at?->toDateString(),
-            'status' => $membership->status,
+            'membership' => $this->gymService->presentMembership($membership),
+            'available_plans' => $availablePlans,
             'has_active_visit' => (bool) $activeVisit,
             'active_visit' => $this->gymService->presentVisit($activeVisit),
         ], 200, 'Gym membership');

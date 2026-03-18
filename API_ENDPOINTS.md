@@ -303,7 +303,13 @@ Body `PUT/PATCH /api/v1/settlements/{id}`:
 - `GET /api/v1/gym/plans`
 - `GET /api/v1/gym/membership`
 - `POST /api/v1/gym/checkout/{plan}`
-- `POST /api/v1/gym/use-session`
+- `POST /api/v1/gym/check-in`
+- `POST /api/v1/gym/check-out`
+- `GET /api/v1/gym/stats`
+
+`GET /api/v1/gym/plans`:
+- отдает список активных абонементов, доступных студенту для покупки
+- backend гарантирует наличие нескольких стандартных тарифов, если они еще не созданы
 
 `GET /api/v1/gym/membership`:
 - если активного абонемента нет:
@@ -312,7 +318,18 @@ Body `PUT/PATCH /api/v1/settlements/{id}`:
   "status_code": 200,
   "message": "Gym membership",
   "data": {
-    "has_membership": false
+    "has_membership": false,
+    "membership": null,
+    "available_plans": [
+      {
+        "id": 1,
+        "name": "Пробный абонемент",
+        "total_sessions": 4,
+        "duration_days": 14,
+        "price": 4000,
+        "is_active": true
+      }
+    ]
   }
 }
 ```
@@ -323,9 +340,32 @@ Body `PUT/PATCH /api/v1/settlements/{id}`:
   "message": "Gym membership",
   "data": {
     "has_membership": true,
-    "remaining_sessions": 10,
-    "expires_at": "2026-03-25",
-    "status": "active"
+    "membership": {
+      "id": 5,
+      "plan": {
+        "id": 2,
+        "name": "Месячный абонемент",
+        "total_sessions": 12,
+        "duration_days": 30,
+        "price": 10000,
+        "is_active": true
+      },
+      "total_sessions": 12,
+      "remaining_sessions": 10,
+      "started_at": "2026-03-01",
+      "expires_at": "2026-03-31",
+      "status": "active"
+    },
+    "available_plans": [
+      {
+        "id": 1,
+        "name": "Пробный абонемент",
+        "total_sessions": 4,
+        "duration_days": 14,
+        "price": 4000,
+        "is_active": true
+      }
+    ]
   }
 }
 ```
@@ -333,12 +373,15 @@ Body `PUT/PATCH /api/v1/settlements/{id}`:
 `POST /api/v1/gym/checkout/{plan}`:
 - создает `charges` запись типа `gym_membership` со статусом `pending`
 - создает Stripe checkout session и `payments` запись
-- возвращает `url` для редиректа на Stripe Checkout
+- возвращает `checkout_url` для редиректа на Stripe Checkout и данные выбранного тарифа
 
-`POST /api/v1/gym/use-session`:
+`POST /api/v1/gym/check-in`:
 - требует активный и не истекший абонемент
 - уменьшает `remaining_sessions`
-- если сессии закончились, переводит абонемент в `expired`
+- если сессии закончились, переводит абонемент в `exhausted`
+
+`POST /api/v1/gym/check-out`:
+- завершает активное посещение и фиксирует длительность
 
 ## Penalty
 Файл: `Modules/Penalty/routes/api.php`

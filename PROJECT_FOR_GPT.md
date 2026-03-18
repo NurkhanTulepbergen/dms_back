@@ -185,21 +185,26 @@ Stripe-конфиг:
   - `GET /api/v1/gym/plans`
   - `GET /api/v1/gym/membership`
   - `POST /api/v1/gym/checkout/{plan}`
-  - `POST /api/v1/gym/use-session`
+  - `POST /api/v1/gym/check-in`
+  - `POST /api/v1/gym/check-out`
+  - `GET /api/v1/gym/stats`
 
 Ключевая логика:
+- `GymService::ensureDefaultPlansExist`:
+  - гарантирует несколько стандартных gym-тарифов, чтобы студент мог выбрать абонемент для покупки;
 - `GymService::purchasePlan`:
   - не дает купить при существующем активном абонементе,
   - создает `charge` типа `gym_membership` (`pending`),
-  - создает Stripe checkout session и `payment`.
+  - создает Stripe checkout session и `payment`,
+  - привязывает покупку к выбранному `gym_plan_id`.
 - `GymService::activateMembership`:
   - вызывается из Finance webhook после успешной оплаты gym charge,
   - создает `gym_memberships` (`total_sessions`, `remaining_sessions`, `started_at`, `expires_at`, `status=active`).
-- `GymService::useSession`:
+- `GymService::checkIn` / `checkOut`:
   - валидирует активный и не истекший абонемент,
-  - создает `gym_visits`,
-  - уменьшает `remaining_sessions`,
-  - при `0` переводит абонемент в `expired`.
+  - создает и завершает `gym_visits`,
+  - при `check-in` уменьшает `remaining_sessions`,
+  - при `0` переводит абонемент в `exhausted`.
 
 ## База данных (смысловые таблицы)
 - Пользователи: `users`, `dorm_students`
