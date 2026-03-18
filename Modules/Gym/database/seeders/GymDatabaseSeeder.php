@@ -3,7 +3,6 @@
 namespace Modules\Gym\Database\Seeders;
 
 use Illuminate\Database\Seeder;
-use Modules\Gym\Services\GymService;
 
 class GymDatabaseSeeder extends Seeder
 {
@@ -12,6 +11,6 @@ class GymDatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        app(GymService::class)->ensureDefaultPlansExist();
+        // Gym plans are managed directly in the gym_plans table via Filament.
     }
 }

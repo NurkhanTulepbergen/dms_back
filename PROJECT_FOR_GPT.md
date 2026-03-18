@@ -190,8 +190,7 @@ Stripe-конфиг:
   - `GET /api/v1/gym/stats`
 
 Ключевая логика:
-- `GymService::ensureDefaultPlansExist`:
-  - гарантирует несколько стандартных gym-тарифов, чтобы студент мог выбрать абонемент для покупки;
+- gym-тарифы для покупки читаются из таблицы `gym_plans` и управляются через Filament;
 - `GymService::purchasePlan`:
   - не дает купить при существующем активном абонементе,
   - создает `charge` типа `gym_membership` (`pending`),

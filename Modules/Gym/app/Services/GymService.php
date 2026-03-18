@@ -17,30 +17,6 @@ use Modules\User\Models\User;
 
 class GymService
 {
-    private const DEFAULT_PLANS = [
-        [
-            'name' => 'Пробный абонемент',
-            'total_sessions' => 4,
-            'price' => 4000,
-            'duration_days' => 14,
-            'is_active' => true,
-        ],
-        [
-            'name' => 'Месячный абонемент',
-            'total_sessions' => 12,
-            'price' => 10000,
-            'duration_days' => 30,
-            'is_active' => true,
-        ],
-        [
-            'name' => 'Расширенный абонемент',
-            'total_sessions' => 24,
-            'price' => 18000,
-            'duration_days' => 60,
-            'is_active' => true,
-        ],
-    ];
-
     private const MEMBERSHIP_STATUS_ACTIVE = 'active';
     private const MEMBERSHIP_STATUS_EXPIRED = 'expired';
     private const MEMBERSHIP_STATUS_CANCELLED = 'cancelled';
@@ -51,20 +27,8 @@ class GymService
     private const VISIT_STATUS_CANCELLED = 'cancelled';
     private const VISIT_STATUS_AUTO_CLOSED = 'auto_closed';
 
-    public function ensureDefaultPlansExist(): void
-    {
-        foreach (self::DEFAULT_PLANS as $plan) {
-            GymPlan::query()->firstOrCreate(
-                ['name' => $plan['name']],
-                $plan,
-            );
-        }
-    }
-
     public function getAvailablePlans(): Collection
     {
-        $this->ensureDefaultPlansExist();
-
         return GymPlan::query()
             ->where('is_active', true)
             ->orderBy('price')
