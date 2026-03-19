@@ -19,8 +19,10 @@ Route::prefix('v1')
         | Users (read-only for now)
         |--------------------------------------------------------------------------
         */
-        Route::get('users', [UserController::class, 'index']);
-        Route::get('users/{user}', [UserController::class, 'show']);
+        Route::middleware('role:admin,manager')->group(function () {
+            Route::apiResource('users', UserController::class)
+                ->only(['index', 'show', 'store', 'update', 'destroy']);
+        });
 
         /*
         |--------------------------------------------------------------------------
