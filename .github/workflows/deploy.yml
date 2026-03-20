@@ -1,0 +1,73 @@
+name: Deploy Backend
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-backend-production
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    env:
+      DEPLOY_BRANCH: main
+      DEPLOY_COMPOSE_FILE: ${{ secrets.DEPLOY_COMPOSE_FILE }}
+      DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+      DEPLOY_PORT: ${{ secrets.DEPLOY_PORT }}
+      DEPLOY_ROOT: ${{ secrets.DEPLOY_ROOT }}
+      DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+      DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
+    steps:
+      - name: Validate deploy settings
+        run: |
+          set -eu
+
+          for var in DEPLOY_HOST DEPLOY_ROOT DEPLOY_SSH_KEY DEPLOY_USER; do
+            if [ -z "$(eval "printf '%s' \"\${$var:-}\"")" ]; then
+              echo "$var is not set"
+              exit 1
+            fi
+          done
+
+      - name: Configure SSH
+        run: |
+          set -eu
+
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "$DEPLOY_SSH_KEY" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          touch ~/.ssh/known_hosts
+          ssh-keyscan -p "${DEPLOY_PORT:-22}" -H "$DEPLOY_HOST" >> ~/.ssh/known_hosts
+
+      - name: Deploy backend on server
+        run: |
+          set -eu
+
+          ssh -p "${DEPLOY_PORT:-22}" "${DEPLOY_USER}@${DEPLOY_HOST}" \
+            "DEPLOY_BRANCH='${DEPLOY_BRANCH}' DEPLOY_COMPOSE_FILE='${DEPLOY_COMPOSE_FILE}' DEPLOY_ROOT='${DEPLOY_ROOT}' /bin/sh -s" <<'EOF'
+          set -eu
+
+          DEPLOY_ROOT=${DEPLOY_ROOT%/}
+          COMPOSE_FILE=${DEPLOY_COMPOSE_FILE:-docker-compose.yml}
+
+          if docker compose version >/dev/null 2>&1; then
+            COMPOSE_BIN="docker compose"
+          else
+            COMPOSE_BIN="docker-compose"
+          fi
+
+          cd "$DEPLOY_ROOT/dms"
+          git fetch origin "$DEPLOY_BRANCH"
+          git checkout "$DEPLOY_BRANCH"
+          git pull --ff-only origin "$DEPLOY_BRANCH"
+
+          cd "$DEPLOY_ROOT/nginx"
+          $COMPOSE_BIN -f "$COMPOSE_FILE" build backend
+          docker rm -f dms_backend >/dev/null 2>&1 || true
+          $COMPOSE_BIN -f "$COMPOSE_FILE" up -d --no-deps backend
+          docker restart dms_nginx >/dev/null 2>&1 || true
+          EOF
