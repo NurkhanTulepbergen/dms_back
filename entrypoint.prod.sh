@@ -7,16 +7,13 @@ if [ ! -f .env ] && [ -f .env.example ]; then
     cp .env.example .env
 fi
 
-if [ ! -f vendor/autoload.php ]; then
-    composer install --no-interaction --prefer-dist --optimize-autoloader
+if [ -z "${APP_KEY:-}" ] && ! grep -q '^APP_KEY=base64:' .env 2>/dev/null; then
+    echo "APP_KEY is not set. Fill APP_KEY in nginx/.env before starting the server."
+    exit 1
 fi
 
 mkdir -p storage/framework/cache/data storage/framework/sessions storage/framework/views bootstrap/cache database
 chmod -R ug+rwx storage bootstrap/cache database || true
-
-if ! grep -q '^APP_KEY=base64:' .env 2>/dev/null; then
-    php artisan key:generate --force
-fi
 
 if [ "${DB_CONNECTION:-mysql}" = "mysql" ]; then
     echo "Waiting for MySQL at ${DB_HOST:-mysql}:${DB_PORT:-3306}..."
@@ -49,5 +46,8 @@ fi
 
 php artisan migrate --force
 php artisan optimize:clear || true
+php artisan config:cache
+php artisan route:cache
+php artisan view:cache
 
 exec php artisan serve --host=0.0.0.0 --port="${PORT:-8000}"

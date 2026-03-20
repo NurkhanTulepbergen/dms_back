@@ -1,0 +1,14 @@
+.git
+.idea
+.vscode
+.env
+.phpunit.result.cache
+backup.sql
+docker/mysql
+node_modules
+vendor
+storage/logs
+storage/framework/cache/*
+storage/framework/sessions/*
+storage/framework/views/*
+bootstrap/cache/*
