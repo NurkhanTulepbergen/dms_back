@@ -19,7 +19,9 @@ class StorePenaltyRequest extends FormRequest
             'points' => 'nullable|integer|min:1',
             'description' => 'nullable|string',
             'evidences' => 'nullable|array',
-            'evidences.*' => 'required|string|max:2048',
+            'evidences.*' => 'required|file|image|max:5120',
+            'evidence_paths' => 'nullable|array',
+            'evidence_paths.*' => 'required|string|max:2048',
         ];
     }
 }

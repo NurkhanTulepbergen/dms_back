@@ -4,6 +4,7 @@ namespace Modules\Penalty\Http\Controllers;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 use Modules\Penalty\Models\Penalty;
 use Modules\Penalty\Models\PenaltyRedemption;
 use Modules\Penalty\Models\PenaltyRule;
@@ -14,6 +15,7 @@ use Modules\Penalty\Http\Requests\StorePenaltyRedemptionRequest;
 use Modules\Penalty\Http\Requests\StorePenaltyRequest;
 use Modules\Penalty\Services\PenaltyService;
 use Modules\Penalty\Services\RedemptionService;
+use Throwable;
 
 class PenaltyController extends Controller
 {
@@ -79,10 +81,30 @@ class PenaltyController extends Controller
 
     public function store(StorePenaltyRequest $request)
     {
-        $payload = $this->penaltyService->createPenalty(
-            $request->validated(),
-            (int) $request->user()->id,
-        );
+        $validated = $request->validated();
+        $storedEvidencePaths = [];
+
+        try {
+            foreach ($request->file('evidences', []) ?? [] as $file) {
+                $storedEvidencePaths[] = $file->store('penalties/evidences', 'public');
+            }
+
+            $payload = $this->penaltyService->createPenalty(
+                array_merge($validated, [
+                    'evidences' => array_values(array_filter([
+                        ...($validated['evidence_paths'] ?? []),
+                        ...$storedEvidencePaths,
+                    ])),
+                ]),
+                (int) $request->user()->id,
+            );
+        } catch (Throwable $exception) {
+            if ($storedEvidencePaths !== []) {
+                Storage::disk('public')->delete($storedEvidencePaths);
+            }
+
+            throw $exception;
+        }
 
         return result($payload, 201, 'Штраф создан');
     }
@@ -126,10 +148,7 @@ class PenaltyController extends Controller
             'room' => $this->serializeRoomNumber($penalty->settlement?->room?->room_number),
             'rule' => $this->serializeRule($penalty->rule),
             'evidences' => $penalty->evidences
-                ->map(fn ($evidence) => [
-                    'id' => $evidence->id,
-                    'file_path' => $evidence->file_path,
-                ])
+                ->map(fn ($evidence) => $this->serializeEvidence($evidence->id, $evidence->file_path))
                 ->values()
                 ->all(),
             'pending_redemption' => $this->serializeRedemption($pendingRedemption),
@@ -201,6 +220,28 @@ class PenaltyController extends Controller
             'user' => $this->serializeUser($redemption->user),
             'reviewer' => $this->serializeUser($redemption->reviewer),
         ];
+    }
+
+    private function serializeEvidence(int $id, ?string $filePath): array
+    {
+        return [
+            'id' => $id,
+            'file_path' => $filePath,
+            'url' => $this->buildFileUrl($filePath),
+        ];
+    }
+
+    private function buildFileUrl(?string $filePath): ?string
+    {
+        if ($filePath === null || $filePath === '') {
+            return null;
+        }
+
+        if (filter_var($filePath, FILTER_VALIDATE_URL)) {
+            return $filePath;
+        }
+
+        return Storage::disk('public')->url($filePath);
     }
 
     private function serializeRoomNumber(mixed $roomNumber): array
