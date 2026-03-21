@@ -209,6 +209,8 @@ Body create/update:
 - `POST /api/v1/requests/live`
 - `GET /api/v1/requests/change-room/my`
 - `POST /api/v1/requests/change-room`
+- `GET /api/v1/repair-requests/my`
+- `POST /api/v1/repair-requests`
 
 Body `POST /api/v1/requests/live`:
 ```json
@@ -228,6 +230,15 @@ Body `POST /api/v1/requests/change-room`:
 }
 ```
 
+Body `POST /api/v1/repair-requests`:
+```json
+{
+  "category": "plumbing",
+  "title": "Сломался кран",
+  "description": "Вода течет без остановки"
+}
+```
+
 ### Manager/Admin (`role:manager,admin`)
 - `GET /api/v1/requests/live`
 - `POST /api/v1/requests/live/{requestLive}/approve`
@@ -235,6 +246,11 @@ Body `POST /api/v1/requests/change-room`:
 - `GET /api/v1/requests/change-room`
 - `POST /api/v1/requests/change-room/{requestChangeRoom}/approve`
 - `POST /api/v1/requests/change-room/{requestChangeRoom}/reject`
+
+### Employee/Admin (`role:employee,admin`)
+- `GET /api/v1/repair-requests`
+- `POST /api/v1/repair-requests/{repairRequest}/start`
+- `POST /api/v1/repair-requests/{repairRequest}/resolve`
 
 ## Settlement
 Файл: `Modules/Settlement/routes/api.php`
