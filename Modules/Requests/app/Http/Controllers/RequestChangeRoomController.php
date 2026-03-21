@@ -5,6 +5,7 @@ namespace Modules\Requests\Http\Controllers;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Validation\ValidationException;
 use Modules\Requests\Models\RequestChangeRoom;
 use Modules\Requests\Services\RequestChangeRoomService;
 
@@ -21,15 +22,24 @@ class RequestChangeRoomController extends Controller
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'room_id' => 'required|exists:rooms,id',
+            'room_id' => 'nullable|exists:rooms,id',
+            'preferred_room_id' => 'nullable|exists:rooms,id',
             'description' => 'nullable|string|max:1000',
         ]);
+
+        $roomId = (int) ($validated['room_id'] ?? $validated['preferred_room_id'] ?? 0);
+
+        if ($roomId <= 0) {
+            throw ValidationException::withMessages([
+                'room_id' => ['The room id field is required.'],
+            ]);
+        }
 
         $user = Auth::user();
 
         $requestChange = $this->requestChangeRoomService->createRequest(
             (int) $user->id,
-            (int) $validated['room_id'],
+            $roomId,
             $validated['description'] ?? null,
         );
 
