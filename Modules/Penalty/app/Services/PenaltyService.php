@@ -3,6 +3,7 @@
 namespace Modules\Penalty\Services;
 
 use App\Exceptions\BusinessException;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\DB;
 use Modules\Finance\Services\ChargeService;
 use Modules\Penalty\Models\Penalty;
@@ -105,6 +106,98 @@ class PenaltyService
             ->where('id', $penaltyId)
             ->with(['rule', 'evidences', 'redemptions.reviewer'])
             ->firstOrFail();
+    }
+
+    public function getManagePenalties(array $filters = [])
+    {
+        $query = Penalty::query()
+            ->with([
+                'user',
+                'creator',
+                'settlement.room',
+                'rule',
+                'evidences',
+                'redemptions.user',
+                'redemptions.reviewer',
+            ])
+            ->orderByDesc('id');
+
+        $search = trim((string) ($filters['search'] ?? ''));
+        if ($search !== '') {
+            $query->where(function (Builder $builder) use ($search) {
+                $builder
+                    ->where('description', 'like', "%{$search}%")
+                    ->orWhereHas('rule', function (Builder $ruleQuery) use ($search) {
+                        $ruleQuery
+                            ->where('title', 'like', "%{$search}%")
+                            ->orWhere('code', 'like', "%{$search}%");
+                    })
+                    ->orWhereHas('user', function (Builder $userQuery) use ($search) {
+                        $userQuery
+                            ->where('name', 'like', "%{$search}%")
+                            ->orWhere('lastname', 'like', "%{$search}%")
+                            ->orWhere('middlename', 'like', "%{$search}%")
+                            ->orWhere('email', 'like', "%{$search}%")
+                            ->orWhere('uni_id', 'like', "%{$search}%");
+                    })
+                    ->orWhereHas('settlement.room', function (Builder $roomQuery) use ($search) {
+                        $roomQuery->where('room_number', 'like', "%{$search}%");
+                    });
+            });
+        }
+
+        $status = $filters['status'] ?? null;
+        if (is_string($status) && $status !== '' && $status !== 'all') {
+            $query->where('status', $status);
+        }
+
+        $redemptionStatus = $filters['redemption_status'] ?? null;
+        if (is_string($redemptionStatus) && $redemptionStatus !== '' && $redemptionStatus !== 'all') {
+            $query->whereHas('redemptions', function (Builder $redemptionQuery) use ($redemptionStatus) {
+                $redemptionQuery->where('status', $redemptionStatus);
+            });
+        }
+
+        return $query->get();
+    }
+
+    public function getPenaltyRules()
+    {
+        return PenaltyRule::query()
+            ->orderBy('title')
+            ->get();
+    }
+
+    public function getPenaltyTargets(?string $search = null, int $limit = 50)
+    {
+        $query = Settlement::query()
+            ->with(['user', 'room'])
+            ->whereNull('end_at')
+            ->whereHas('user', function (Builder $builder) {
+                $builder->where('role', 'student');
+            })
+            ->orderByDesc('id')
+            ->limit($limit);
+
+        $search = trim((string) $search);
+        if ($search !== '') {
+            $query->where(function (Builder $builder) use ($search) {
+                $builder
+                    ->whereHas('user', function (Builder $userQuery) use ($search) {
+                        $userQuery
+                            ->where('name', 'like', "%{$search}%")
+                            ->orWhere('lastname', 'like', "%{$search}%")
+                            ->orWhere('middlename', 'like', "%{$search}%")
+                            ->orWhere('email', 'like', "%{$search}%")
+                            ->orWhere('uni_id', 'like', "%{$search}%");
+                    })
+                    ->orWhereHas('room', function (Builder $roomQuery) use ($search) {
+                        $roomQuery->where('room_number', 'like', "%{$search}%");
+                    });
+            });
+        }
+
+        return $query->get();
     }
 
     private function createFinancialChargeIfNeeded(
