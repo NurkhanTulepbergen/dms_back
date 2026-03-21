@@ -15,6 +15,12 @@ fi
 mkdir -p storage/framework/cache/data storage/framework/sessions storage/framework/views bootstrap/cache database
 chmod -R ug+rwx storage bootstrap/cache database || true
 
+mkdir -p storage/app/public/buy-sell
+
+if [ ! -e public/storage ]; then
+    php artisan storage:link || true
+fi
+
 if [ "${DB_CONNECTION:-mysql}" = "mysql" ]; then
     echo "Waiting for MySQL at ${DB_HOST:-mysql}:${DB_PORT:-3306}..."
     ATTEMPTS_LEFT=60

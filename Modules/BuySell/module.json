@@ -1,0 +1,11 @@
+{
+    "name": "BuySell",
+    "alias": "buysell",
+    "description": "Campus buy-sell marketplace",
+    "keywords": [],
+    "priority": 0,
+    "providers": [
+        "Modules\\BuySell\\Providers\\BuySellServiceProvider"
+    ],
+    "files": []
+}

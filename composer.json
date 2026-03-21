@@ -36,7 +36,8 @@
             "Modules\\Settlement\\": "Modules/Settlement/app",
             "Modules\\Finance\\": "Modules/Finance/app",
             "Modules\\Penalty\\": "Modules/Penalty/app",
-            "Modules\\Gym\\": "Modules/Gym/app"
+            "Modules\\Gym\\": "Modules/Gym/app",
+            "Modules\\BuySell\\": "Modules/BuySell/app"
         },
         "files": [
             "app/Helpers/result.php"

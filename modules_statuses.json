@@ -7,5 +7,6 @@
     "Settlement": true,
     "Finance": true,
     "Penalty": true,
-    "Gym": true
+    "Gym": true,
+    "BuySell": true
 }
