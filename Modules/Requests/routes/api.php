@@ -14,7 +14,9 @@ Route::prefix('v1')
         |--------------------------------------------------------------------------
         */
         Route::middleware('role:student')->group(function () {
+            Route::get('requests/live/my', [RequestLiveController::class, 'mine']);
             Route::post('requests/live', [RequestLiveController::class, 'store']);
+            Route::get('requests/change-room/my', [RequestChangeRoomController::class, 'mine']);
             Route::post('requests/change-room', [RequestChangeRoomController::class, 'store']);
         });
 

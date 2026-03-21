@@ -205,7 +205,9 @@ Body create/update:
 Все endpoint’ы под `auth:sanctum`.
 
 ### Student (`role:student`)
+- `GET /api/v1/requests/live/my`
 - `POST /api/v1/requests/live`
+- `GET /api/v1/requests/change-room/my`
 - `POST /api/v1/requests/change-room`
 
 Body `POST /api/v1/requests/live`:

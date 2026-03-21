@@ -31,6 +31,19 @@ class RequestLiveController extends Controller
         return result($final, 201, 'Заявка успещно отправлена');
     }
 
+    public function mine()
+    {
+        $userId = (int) Auth::id();
+
+        $requests = RequestLive::query()
+            ->with(['preferredRoom.floor.building', 'documents'])
+            ->where('user_id', $userId)
+            ->orderByDesc('created_at')
+            ->get();
+
+        return result($requests, 200, 'Мои заявки на заселение');
+    }
+
     public function index()
     {
         $requests = RequestLive::with(['student', 'preferredRoom.floor.building', 'documents'])->get();

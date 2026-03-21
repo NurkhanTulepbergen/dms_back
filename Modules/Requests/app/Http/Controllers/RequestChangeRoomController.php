@@ -47,6 +47,23 @@ class RequestChangeRoomController extends Controller
     }
 
     /**
+     * 👨‍🎓 Студент: мои заявки
+     * GET /requests/change-room/my
+     */
+    public function mine()
+    {
+        $userId = (int) Auth::id();
+
+        $requests = RequestChangeRoom::query()
+            ->with(['room.floor.building'])
+            ->where('student_id', $userId)
+            ->orderByDesc('created_at')
+            ->get();
+
+        return result($requests, 200, 'Мои заявки на смену комнаты');
+    }
+
+    /**
      * 👨‍💼 Менеджер: список заявок
      * GET /requests/change-room
      */
