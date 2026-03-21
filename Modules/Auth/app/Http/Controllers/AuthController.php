@@ -14,7 +14,7 @@ class AuthController extends Controller
 
     public function register(Request $request){
         $request->validate([
-            'role' => 'required|in:admin,student,manager,employee',
+            'role' => 'required|in:admin,student,manager,dorm-admin,employee',
             'email' => 'required|email|unique:users',
             'password' => 'required|min:8',
             'phone_number' => 'required',

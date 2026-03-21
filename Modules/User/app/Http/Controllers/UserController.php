@@ -32,7 +32,7 @@ class UserController extends Controller
     private function userPayloadRules(?User $user = null): array
     {
         return [
-            'role' => ['required', Rule::in(['admin', 'student', 'manager', 'employee'])],
+            'role' => ['required', Rule::in(['admin', 'student', 'manager', 'dorm-admin', 'employee'])],
             'email' => ['required', 'email', Rule::unique('users', 'email')->ignore($user?->id)],
             'password' => [$user ? 'nullable' : 'required', 'string', 'min:8'],
             'phone_number' => ['required', 'string', 'max:255'],
