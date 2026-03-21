@@ -79,6 +79,36 @@ class PenaltyController extends Controller
         );
     }
 
+    public function rooms(Request $request)
+    {
+        $limit = max(1, min((int) $request->query('limit', 50), 100));
+        $roomTargets = $this->penaltyService->getPenaltyRoomTargets(
+            $request->query('search'),
+            $limit,
+        );
+
+        return result(
+            $roomTargets
+                ->map(function ($settlements, $roomId) {
+                    $firstSettlement = $settlements->first();
+
+                    return [
+                        'room_id' => (int) $roomId,
+                        'room' => $this->serializeRoomNumber($firstSettlement?->room?->room_number),
+                        'active_residents_count' => $settlements->count(),
+                        'residents' => $settlements
+                            ->map(fn (Settlement $settlement) => $this->serializeUser($settlement->user))
+                            ->filter()
+                            ->values()
+                            ->all(),
+                    ];
+                })
+                ->values(),
+            200,
+            'Комнаты для штрафов'
+        );
+    }
+
     public function store(StorePenaltyRequest $request)
     {
         $validated = $request->validated();
@@ -106,7 +136,11 @@ class PenaltyController extends Controller
             throw $exception;
         }
 
-        return result($payload, 201, 'Штраф создан');
+        $message = ! empty($validated['room_id'])
+            ? 'Штрафы начислены всем студентам комнаты'
+            : 'Штраф создан';
+
+        return result($payload, 201, $message);
     }
 
     public function cancel(CancelPenaltyRequest $request, int $id)

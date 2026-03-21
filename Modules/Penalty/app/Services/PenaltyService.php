@@ -3,6 +3,7 @@
 namespace Modules\Penalty\Services;
 
 use App\Exceptions\BusinessException;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\DB;
 use Modules\Finance\Services\ChargeService;
@@ -22,50 +23,63 @@ class PenaltyService
     public function createPenalty(array $data, int $createdBy): array
     {
         return DB::transaction(function () use ($data, $createdBy) {
-            $user = User::query()->lockForUpdate()->findOrFail((int) $data['user_id']);
-
-            $settlement = Settlement::query()
-                ->where('user_id', $user->id)
-                ->whereNull('end_at')
-                ->lockForUpdate()
-                ->first();
-
-            if ($settlement === null) {
-                throw new BusinessException('У студента нет активного заселения', 422);
-            }
-
             $rule = PenaltyRule::query()->findOrFail((int) $data['rule_id']);
-
             $points = (int) ($data['points'] ?? $rule->default_points);
+
             if ($points <= 0) {
                 throw new BusinessException('Points must be greater than zero', 422);
             }
 
-            $penalty = Penalty::query()->create([
-                'user_id' => $user->id,
-                'settlement_id' => $settlement->id,
-                'rule_id' => $rule->id,
-                'created_by' => $createdBy,
-                'points' => $points,
-                'description' => $data['description'] ?? null,
-                'status' => 'active',
-            ]);
+            if (! empty($data['room_id'])) {
+                $roomId = (int) $data['room_id'];
+                $settlements = $this->getActiveRoomSettlements($roomId);
 
-            foreach ($data['evidences'] ?? [] as $path) {
-                PenaltyEvidence::query()->create([
-                    'penalty_id' => $penalty->id,
-                    'file_path' => $path,
-                ]);
+                if ($settlements->isEmpty()) {
+                    throw new BusinessException('В выбранной комнате нет активных студентов', 422);
+                }
+
+                $createdPenalties = [];
+                $disciplines = [];
+
+                foreach ($settlements as $settlement) {
+                    $payload = $this->createPenaltyForSettlement(
+                        $settlement->user,
+                        $settlement,
+                        $rule,
+                        $points,
+                        $data['description'] ?? null,
+                        $createdBy,
+                        $data['evidences'] ?? [],
+                    );
+
+                    $createdPenalties[] = $payload['penalty'];
+
+                    if ($payload['discipline'] !== null) {
+                        $disciplines[] = $payload['discipline'];
+                    }
+                }
+
+                return [
+                    'penalties' => $createdPenalties,
+                    'disciplines' => $disciplines,
+                    'target_type' => 'room',
+                    'room_id' => $roomId,
+                    'affected_users_count' => count($createdPenalties),
+                ];
             }
 
-            $this->createFinancialChargeIfNeeded($penalty, $rule, $settlement, $user);
+            $user = User::query()->lockForUpdate()->findOrFail((int) $data['user_id']);
+            $settlement = $this->getActiveUserSettlement($user->id);
 
-            $discipline = $this->disciplinePolicyService->applyIfLimitReached((int) $user->id);
-
-            return [
-                'penalty' => $penalty->load(['rule', 'evidences', 'redemptions']),
-                'discipline' => $discipline,
-            ];
+            return $this->createPenaltyForSettlement(
+                $user,
+                $settlement,
+                $rule,
+                $points,
+                $data['description'] ?? null,
+                $createdBy,
+                $data['evidences'] ?? [],
+            );
         });
     }
 
@@ -198,6 +212,106 @@ class PenaltyService
         }
 
         return $query->get();
+    }
+
+    public function getPenaltyRoomTargets(?string $search = null, int $limit = 50)
+    {
+        $query = Settlement::query()
+            ->with(['user', 'room'])
+            ->whereNull('end_at')
+            ->whereHas('user', function (Builder $builder) {
+                $builder->where('role', 'student');
+            })
+            ->orderBy('room_id')
+            ->orderByDesc('id');
+
+        $search = trim((string) $search);
+
+        if ($search !== '') {
+            $query->where(function (Builder $builder) use ($search) {
+                $builder
+                    ->whereHas('user', function (Builder $userQuery) use ($search) {
+                        $userQuery
+                            ->where('name', 'like', "%{$search}%")
+                            ->orWhere('lastname', 'like', "%{$search}%")
+                            ->orWhere('middlename', 'like', "%{$search}%")
+                            ->orWhere('email', 'like', "%{$search}%")
+                            ->orWhere('uni_id', 'like', "%{$search}%");
+                    })
+                    ->orWhereHas('room', function (Builder $roomQuery) use ($search) {
+                        $roomQuery->where('room_number', 'like', "%{$search}%");
+                    });
+            });
+        }
+
+        return $query->get()
+            ->groupBy('room_id')
+            ->take($limit);
+    }
+
+    private function createPenaltyForSettlement(
+        User $user,
+        Settlement $settlement,
+        PenaltyRule $rule,
+        int $points,
+        ?string $description,
+        int $createdBy,
+        array $evidencePaths = [],
+    ): array {
+        $penalty = Penalty::query()->create([
+            'user_id' => $user->id,
+            'settlement_id' => $settlement->id,
+            'rule_id' => $rule->id,
+            'created_by' => $createdBy,
+            'points' => $points,
+            'description' => $description,
+            'status' => 'active',
+        ]);
+
+        foreach ($evidencePaths as $path) {
+            PenaltyEvidence::query()->create([
+                'penalty_id' => $penalty->id,
+                'file_path' => $path,
+            ]);
+        }
+
+        $this->createFinancialChargeIfNeeded($penalty, $rule, $settlement, $user);
+
+        $discipline = $this->disciplinePolicyService->applyIfLimitReached((int) $user->id);
+
+        return [
+            'penalty' => $penalty->load(['rule', 'evidences', 'redemptions']),
+            'discipline' => $discipline,
+        ];
+    }
+
+    private function getActiveUserSettlement(int $userId): Settlement
+    {
+        $settlement = Settlement::query()
+            ->with('user')
+            ->where('user_id', $userId)
+            ->whereNull('end_at')
+            ->lockForUpdate()
+            ->first();
+
+        if ($settlement === null) {
+            throw new BusinessException('У студента нет активного заселения', 422);
+        }
+
+        return $settlement;
+    }
+
+    private function getActiveRoomSettlements(int $roomId): Collection
+    {
+        return Settlement::query()
+            ->with(['user', 'room'])
+            ->where('room_id', $roomId)
+            ->whereNull('end_at')
+            ->whereHas('user', function (Builder $builder) {
+                $builder->where('role', 'student');
+            })
+            ->lockForUpdate()
+            ->get();
     }
 
     private function createFinancialChargeIfNeeded(

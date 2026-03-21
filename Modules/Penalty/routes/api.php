@@ -11,6 +11,7 @@ Route::prefix('v1/penalties')
             Route::get('/manage', [PenaltyController::class, 'manageIndex']);
             Route::get('/rules', [PenaltyController::class, 'rules']);
             Route::get('/targets', [PenaltyController::class, 'targets']);
+            Route::get('/rooms', [PenaltyController::class, 'rooms']);
         });
 
         Route::middleware('role:student')->group(function () {

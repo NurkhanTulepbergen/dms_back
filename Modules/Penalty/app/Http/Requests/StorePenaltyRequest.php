@@ -14,7 +14,8 @@ class StorePenaltyRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'user_id' => 'required|integer|exists:users,id',
+            'user_id' => 'nullable|integer|exists:users,id|required_without:room_id|prohibited_with:room_id',
+            'room_id' => 'nullable|integer|exists:rooms,id|required_without:user_id|prohibited_with:user_id',
             'rule_id' => 'required|integer|exists:penalty_rules,id',
             'points' => 'nullable|integer|min:1',
             'description' => 'nullable|string',
