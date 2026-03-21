@@ -4,6 +4,7 @@ use Illuminate\Support\Facades\Route;
 use Filament\Facades\Filament;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Storage;
 use Modules\Dormitory\Filament\Resources\Buildings\BuildingResource;
 use Modules\Dormitory\Models\Building;
 
@@ -84,6 +85,16 @@ Route::get('/_debug/buildings-access', function () {
         ],
     ]);
 });
+
+Route::get('/storage/penalties/evidences/{path}', function (string $path) {
+    $storagePath = 'penalties/evidences/'.$path;
+
+    abort_unless(Storage::disk('public')->exists($storagePath), 404);
+
+    return Storage::disk('public')->response($storagePath, basename($storagePath), [
+        'Cache-Control' => 'public, max-age=86400',
+    ]);
+})->where('path', '.*');
 
 Route::get('/', function () {
     return view('welcome');
