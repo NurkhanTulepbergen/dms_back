@@ -44,6 +44,10 @@ class StripeService
             'charge_id' => $charge->id,
         ], $options['metadata'] ?? []);
 
+        if (! str_contains($successUrl, '{CHECKOUT_SESSION_ID}')) {
+            $successUrl .= (str_contains($successUrl, '?') ? '&' : '?') . 'session_id={CHECKOUT_SESSION_ID}';
+        }
+
         return Session::create([
             'payment_method_types' => ['card'],
             'mode' => 'payment',
@@ -61,5 +65,18 @@ class StripeService
             'cancel_url' => $cancelUrl,
             'metadata' => $metadata,
         ]);
+    }
+
+    public function retrieveCheckoutSession(string $sessionId)
+    {
+        $secret = config('services.stripe.secret');
+
+        if (empty($secret)) {
+            throw new RuntimeException('Stripe secret key is not configured');
+        }
+
+        Stripe::setApiKey($secret);
+
+        return Session::retrieve($sessionId);
     }
 }
