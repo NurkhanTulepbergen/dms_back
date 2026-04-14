@@ -67,7 +67,9 @@ jobs:
 
           cd "$DEPLOY_ROOT/nginx"
           $COMPOSE_BIN -f "$COMPOSE_FILE" build backend
+          $COMPOSE_BIN -f "$COMPOSE_FILE" rm -f -s backend >/dev/null 2>&1 || true
           docker rm -f dms_backend >/dev/null 2>&1 || true
+          docker ps -aq --filter "name=_dms_backend$" | xargs -r docker rm -f >/dev/null 2>&1 || true
           $COMPOSE_BIN -f "$COMPOSE_FILE" up -d --no-deps backend
           docker restart dms_nginx >/dev/null 2>&1 || true
           EOF
