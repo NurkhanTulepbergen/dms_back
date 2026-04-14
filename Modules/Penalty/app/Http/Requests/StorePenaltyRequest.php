@@ -17,7 +17,7 @@ class StorePenaltyRequest extends FormRequest
             'user_id' => 'nullable|integer|exists:users,id|required_without:room_id|prohibited_with:room_id',
             'room_id' => 'nullable|integer|exists:rooms,id|required_without:user_id|prohibited_with:user_id',
             'rule_id' => 'required|integer|exists:penalty_rules,id',
-            'points' => 'nullable|integer|min:1',
+            'points' => 'nullable|integer|min:1|max:10',
             'description' => 'nullable|string',
             'evidences' => 'nullable|array',
             'evidences.*' => 'required|file|image|max:5120',

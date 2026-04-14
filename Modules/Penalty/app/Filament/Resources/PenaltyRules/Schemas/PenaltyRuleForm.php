@@ -21,7 +21,8 @@ class PenaltyRuleForm
                 TextInput::make('default_points')
                     ->numeric()
                     ->required()
-                    ->minValue(0),
+                    ->minValue(0)
+                    ->maxValue(10),
                 Toggle::make('redeemable')
                     ->required()
                     ->default(true),

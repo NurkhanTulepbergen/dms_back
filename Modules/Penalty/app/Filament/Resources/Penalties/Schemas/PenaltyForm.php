@@ -40,7 +40,8 @@ class PenaltyForm
                 TextInput::make('points')
                     ->numeric()
                     ->required()
-                    ->minValue(0),
+                    ->minValue(0)
+                    ->maxValue(10),
                 Textarea::make('description')
                     ->rows(4),
                 Select::make('status')

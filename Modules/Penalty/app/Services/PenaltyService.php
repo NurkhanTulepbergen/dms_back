@@ -30,6 +30,10 @@ class PenaltyService
                 throw new BusinessException('Points must be greater than zero', 422);
             }
 
+            if ($points > 10) {
+                throw new BusinessException('Количество баллов не должно превышать 10', 422);
+            }
+
             if (! empty($data['room_id'])) {
                 $roomId = (int) $data['room_id'];
                 $settlements = $this->getActiveRoomSettlements($roomId);
