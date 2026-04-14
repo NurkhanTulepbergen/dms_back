@@ -1,6 +1,7 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use Modules\User\Http\Controllers\NotificationController;
 use Modules\User\Http\Controllers\UserController;
 
 Route::prefix('v1')
@@ -14,12 +15,19 @@ Route::prefix('v1')
         */
         Route::get('me', [UserController::class, 'me']);
 
+        Route::get('notifications', [NotificationController::class, 'index']);
+        Route::post('notifications/read-all', [NotificationController::class, 'markAllAsRead']);
+        Route::post('notifications/{notificationId}/read', [NotificationController::class, 'markAsRead']);
+
         /*
         |--------------------------------------------------------------------------
         | Users (read-only for now)
         |--------------------------------------------------------------------------
         */
         Route::middleware('role:admin,manager')->group(function () {
+            Route::get('notifications/broadcasts', [NotificationController::class, 'broadcasts']);
+            Route::post('notifications/broadcasts', [NotificationController::class, 'store']);
+
             Route::apiResource('users', UserController::class)
                 ->only(['index', 'show', 'store', 'update', 'destroy']);
         });

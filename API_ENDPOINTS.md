@@ -103,8 +103,24 @@
 
 Под `auth:sanctum`:
 - `GET /api/v1/me`
+- `GET /api/v1/notifications`
+- `POST /api/v1/notifications/read-all`
+- `POST /api/v1/notifications/{notificationId}/read`
 - `GET /api/v1/users`
 - `GET /api/v1/users/{user}`
+
+Под `auth:sanctum + role:admin,manager`:
+- `GET /api/v1/notifications/broadcasts`
+- `POST /api/v1/notifications/broadcasts`
+
+Body для `POST /api/v1/notifications/broadcasts`:
+```json
+{
+  "title": "Важно",
+  "message": "Сегодня в 20:00 отключат воду",
+  "action_url": "/news"
+}
+```
 
 ## News
 Файл: `Modules/News/routes/api.php`
