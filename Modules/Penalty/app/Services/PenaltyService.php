@@ -26,8 +26,8 @@ class PenaltyService
             $rule = PenaltyRule::query()->findOrFail((int) $data['rule_id']);
             $points = (int) ($data['points'] ?? $rule->default_points);
 
-            if ($points <= 0) {
-                throw new BusinessException('Points must be greater than zero', 422);
+            if ($points < 0) {
+                throw new BusinessException('Количество баллов не может быть отрицательным', 422);
             }
 
             if ($points > 10) {
