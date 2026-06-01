@@ -15,7 +15,9 @@ jobs:
     runs-on: ubuntu-latest
     env:
       DEPLOY_BRANCH: main
+      DEPLOY_BACKEND_DIR: ${{ secrets.DEPLOY_BACKEND_DIR }}
       DEPLOY_COMPOSE_FILE: ${{ secrets.DEPLOY_COMPOSE_FILE }}
+      DEPLOY_COMPOSE_DIR: ${{ secrets.DEPLOY_COMPOSE_DIR }}
       DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
       DEPLOY_PORT: ${{ secrets.DEPLOY_PORT }}
       DEPLOY_ROOT: ${{ secrets.DEPLOY_ROOT }}
@@ -48,10 +50,12 @@ jobs:
           set -eu
 
           ssh -p "${DEPLOY_PORT:-22}" "${DEPLOY_USER}@${DEPLOY_HOST}" \
-            "DEPLOY_BRANCH='${DEPLOY_BRANCH}' DEPLOY_COMPOSE_FILE='${DEPLOY_COMPOSE_FILE}' DEPLOY_ROOT='${DEPLOY_ROOT}' /bin/sh -s" <<'EOF'
+            "DEPLOY_BACKEND_DIR='${DEPLOY_BACKEND_DIR}' DEPLOY_BRANCH='${DEPLOY_BRANCH}' DEPLOY_COMPOSE_DIR='${DEPLOY_COMPOSE_DIR}' DEPLOY_COMPOSE_FILE='${DEPLOY_COMPOSE_FILE}' DEPLOY_ROOT='${DEPLOY_ROOT}' /bin/sh -s" <<'EOF'
           set -eu
 
           DEPLOY_ROOT=${DEPLOY_ROOT%/}
+          BACKEND_DIR=${DEPLOY_BACKEND_DIR:-dms_back}
+          COMPOSE_DIR=${DEPLOY_COMPOSE_DIR:-$BACKEND_DIR/deploy}
           COMPOSE_FILE=${DEPLOY_COMPOSE_FILE:-docker-compose.yml}
 
           if docker compose version >/dev/null 2>&1; then
@@ -60,12 +64,12 @@ jobs:
             COMPOSE_BIN="docker-compose"
           fi
 
-          cd "$DEPLOY_ROOT/dms"
+          cd "$DEPLOY_ROOT/$BACKEND_DIR"
           git fetch origin "$DEPLOY_BRANCH"
           git checkout "$DEPLOY_BRANCH"
           git pull --ff-only origin "$DEPLOY_BRANCH"
 
-          cd "$DEPLOY_ROOT/nginx"
+          cd "$DEPLOY_ROOT/$COMPOSE_DIR"
           $COMPOSE_BIN -f "$COMPOSE_FILE" build backend
           $COMPOSE_BIN -f "$COMPOSE_FILE" rm -f -s backend >/dev/null 2>&1 || true
           docker rm -f dms_backend >/dev/null 2>&1 || true
