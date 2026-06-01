@@ -21,6 +21,9 @@ if [ ! -e public/storage ]; then
     php artisan storage:link || true
 fi
 
+# The image can contain config cached during build; runtime env must win.
+rm -f bootstrap/cache/config.php bootstrap/cache/routes-*.php bootstrap/cache/events.php
+
 if [ "${DB_CONNECTION:-mysql}" = "mysql" ]; then
     echo "Waiting for MySQL at ${DB_HOST:-mysql}:${DB_PORT:-3306}..."
     ATTEMPTS_LEFT=60
