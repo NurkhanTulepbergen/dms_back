@@ -480,3 +480,4 @@ Body `POST /api/v1/penalties/{id}/cancel`:
 - `approve/reject` redemption не требуют body
 - штраф привязывается к активному `settlement` студента
 - если у правила `creates_financial_charge=true`, создается финансовое начисление
+- так же будут дополнение
