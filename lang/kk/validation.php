@@ -1,0 +1,48 @@
+<?php
+
+return [
+    'accepted' => ':attribute қабылдануы керек.',
+    'array' => ':attribute массив болуы керек.',
+    'boolean' => ':attribute true немесе false болуы керек.',
+    'confirmed' => ':attribute растауы сәйкес келмейді.',
+    'date' => ':attribute жарамды күн болуы керек.',
+    'email' => ':attribute жарамды email болуы керек.',
+    'exists' => 'Таңдалған :attribute жарамсыз.',
+    'file' => ':attribute файл болуы керек.',
+    'image' => ':attribute сурет болуы керек.',
+    'in' => 'Таңдалған :attribute жарамсыз.',
+    'integer' => ':attribute бүтін сан болуы керек.',
+    'max' => [
+        'array' => ':attribute :max элементтен аспауы керек.',
+        'file' => ':attribute :max килобайттан аспауы керек.',
+        'numeric' => ':attribute :max мәнінен аспауы керек.',
+        'string' => ':attribute :max таңбадан аспауы керек.',
+    ],
+    'mimes' => ':attribute келесі түрлердің бірі болуы керек: :values.',
+    'min' => [
+        'array' => ':attribute кемінде :min элемент болуы керек.',
+        'file' => ':attribute кемінде :min килобайт болуы керек.',
+        'numeric' => ':attribute кемінде :min болуы керек.',
+        'string' => ':attribute кемінде :min таңба болуы керек.',
+    ],
+    'numeric' => ':attribute сан болуы керек.',
+    'required' => ':attribute өрісі міндетті.',
+    'string' => ':attribute мәтін болуы керек.',
+    'unique' => 'Мұндай :attribute бұрыннан бар.',
+
+    'attributes' => [
+        'email' => 'email',
+        'password' => 'құпиясөз',
+        'old_password' => 'ескі құпиясөз',
+        'new_password' => 'жаңа құпиясөз',
+        'full_name' => 'толық аты',
+        'phone_number' => 'телефон',
+        'room_id' => 'бөлме',
+        'description' => 'сипаттама',
+        'title' => 'атауы',
+        'category' => 'санат',
+        'status' => 'күйі',
+        'photos' => 'фотосуреттер',
+        'documents' => 'құжаттар',
+    ],
+];

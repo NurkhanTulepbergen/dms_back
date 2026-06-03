@@ -1,0 +1,48 @@
+<?php
+
+return [
+    'accepted' => 'Поле :attribute должно быть принято.',
+    'array' => 'Поле :attribute должно быть массивом.',
+    'boolean' => 'Поле :attribute должно быть true или false.',
+    'confirmed' => 'Подтверждение поля :attribute не совпадает.',
+    'date' => 'Поле :attribute должно быть корректной датой.',
+    'email' => 'Поле :attribute должно быть корректным email.',
+    'exists' => 'Выбранное значение для :attribute некорректно.',
+    'file' => 'Поле :attribute должно быть файлом.',
+    'image' => 'Поле :attribute должно быть изображением.',
+    'in' => 'Выбранное значение для :attribute некорректно.',
+    'integer' => 'Поле :attribute должно быть целым числом.',
+    'max' => [
+        'array' => 'Поле :attribute не должно содержать больше :max элементов.',
+        'file' => 'Файл :attribute не должен быть больше :max килобайт.',
+        'numeric' => 'Поле :attribute не должно быть больше :max.',
+        'string' => 'Поле :attribute не должно быть длиннее :max символов.',
+    ],
+    'mimes' => 'Поле :attribute должно быть файлом одного из типов: :values.',
+    'min' => [
+        'array' => 'Поле :attribute должно содержать минимум :min элементов.',
+        'file' => 'Файл :attribute должен быть минимум :min килобайт.',
+        'numeric' => 'Поле :attribute должно быть минимум :min.',
+        'string' => 'Поле :attribute должно быть минимум :min символов.',
+    ],
+    'numeric' => 'Поле :attribute должно быть числом.',
+    'required' => 'Поле :attribute обязательно.',
+    'string' => 'Поле :attribute должно быть строкой.',
+    'unique' => 'Такое значение поля :attribute уже существует.',
+
+    'attributes' => [
+        'email' => 'email',
+        'password' => 'пароль',
+        'old_password' => 'старый пароль',
+        'new_password' => 'новый пароль',
+        'full_name' => 'ФИО',
+        'phone_number' => 'телефон',
+        'room_id' => 'комната',
+        'description' => 'описание',
+        'title' => 'название',
+        'category' => 'категория',
+        'status' => 'статус',
+        'photos' => 'фото',
+        'documents' => 'документы',
+    ],
+];

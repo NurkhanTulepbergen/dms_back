@@ -19,6 +19,8 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
+        $middleware->append(\App\Http\Middleware\SetLocale::class);
+
         $middleware->redirectGuestsTo(function (Request $request): ?string {
             if ($request->is('api/*')) {
                 return null;
@@ -49,7 +51,7 @@ return Application::configure(basePath: dirname(__DIR__))
         // Authentication → API JSON, Web стандартный редирект Filament
         $exceptions->renderable(function (AuthenticationException $e, $request) {
             if ($request->is('api/*')) {
-                return result(null, 401, 'Неавторизованный пользователь');
+                return result(null, 401, __('auth.unauthenticated'));
             }
 
             return null;
@@ -60,10 +62,10 @@ return Application::configure(basePath: dirname(__DIR__))
 
             if ($request->is('api/*')) {
                 if ($e->getPrevious() instanceof ModelNotFoundException) {
-                    return result(null, 404, 'Объект не найден');
+                    return result(null, 404, __('errors.model_not_found'));
                 }
 
-                return result(null, 404, 'Маршрут не найден');
+                return result(null, 404, __('errors.route_not_found'));
             }
 
             // для Filament / web — стандартный Laravel HTML 404
