@@ -39,11 +39,29 @@ jobs:
         run: |
           set -eu
 
+          SSH_HOST="$(printf '%s' "$DEPLOY_HOST" | tr -d '[:space:]')"
+          SSH_PORT="$(printf '%s' "${DEPLOY_PORT:-22}" | tr -d '[:space:]')"
+          SSH_PORT="${SSH_PORT:-22}"
+          if [ -z "$SSH_HOST" ]; then
+            echo "DEPLOY_HOST is empty after trimming whitespace."
+            exit 1
+          fi
+
+          if ! printf '%s' "$SSH_PORT" | grep -Eq '^[0-9]+$'; then
+            echo "DEPLOY_PORT must be a number. Current value is invalid."
+            exit 1
+          fi
+          printf 'DEPLOY_HOST=%s\n' "$SSH_HOST" >> "$GITHUB_ENV"
+          printf 'DEPLOY_PORT=%s\n' "$SSH_PORT" >> "$GITHUB_ENV"
+
           install -m 700 -d ~/.ssh
           printf '%s\n' "$DEPLOY_SSH_KEY" > ~/.ssh/id_ed25519
           chmod 600 ~/.ssh/id_ed25519
           touch ~/.ssh/known_hosts
-          ssh-keyscan -p "${DEPLOY_PORT:-22}" -H "$DEPLOY_HOST" >> ~/.ssh/known_hosts
+          if ! ssh-keyscan -T 30 -p "$SSH_PORT" -H "$SSH_HOST" >> ~/.ssh/known_hosts; then
+            echo "Could not read SSH host key. Check DEPLOY_HOST, DEPLOY_PORT, firewall, and SSH service."
+            exit 1
+          fi
 
       - name: Deploy backend on server
         run: |
