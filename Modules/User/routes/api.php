@@ -24,12 +24,16 @@ Route::prefix('v1')
         | Users (read-only for now)
         |--------------------------------------------------------------------------
         */
+        Route::middleware('role:admin,manager,employee')->group(function () {
+            Route::get('users', [UserController::class, 'index']);
+        });
+
         Route::middleware('role:admin,manager')->group(function () {
             Route::get('notifications/broadcasts', [NotificationController::class, 'broadcasts']);
             Route::post('notifications/broadcasts', [NotificationController::class, 'store']);
 
             Route::apiResource('users', UserController::class)
-                ->only(['index', 'show', 'store', 'update', 'destroy']);
+                ->only(['show', 'store', 'update', 'destroy']);
         });
 
         /*

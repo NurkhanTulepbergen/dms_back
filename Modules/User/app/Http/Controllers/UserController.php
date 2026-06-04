@@ -60,10 +60,16 @@ class UserController extends Controller
     }
 
     // GET /api/v1/users
-    public function index()
+    public function index(Request $request)
     {
-        $users = User::query()
-            ->select($this->userResourceColumns())
+        $query = User::query()
+            ->select($this->userResourceColumns());
+
+        if ($request->user()?->role === 'employee') {
+            $query->where('role', 'student');
+        }
+
+        $users = $query
             ->orderByDesc('id')
             ->get();
 
