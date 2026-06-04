@@ -30,11 +30,18 @@ class NotificationController extends Controller
     private function serializeInboxNotification(DatabaseNotification $notification): array
     {
         $data = is_array($notification->data) ? $notification->data : [];
+        $defaultTitle = is_string($data['title'] ?? null) ? $data['title'] : 'Уведомление';
+        $defaultMessage = is_string($data['message'] ?? null) ? $data['message'] : '';
+        $title = $this->localizedDataValue($data, 'title', $defaultTitle);
+        $message = $this->localizedDataValue($data, 'message', $defaultMessage);
 
         return [
             'id' => $notification->id,
-            'title' => $data['title'] ?? 'Уведомление',
-            'message' => $data['message'] ?? '',
+            'title' => $title,
+            'message' => $message,
+            'title_ru' => $data['title_ru'] ?? $defaultTitle,
+            'message_ru' => $data['message_ru'] ?? $defaultMessage,
+            'translations' => $data['translations'] ?? null,
             'action_url' => $data['action_url'] ?? null,
             'sender_name' => $data['sender_name'] ?? null,
             'broadcast_id' => $data['broadcast_id'] ?? null,
@@ -47,8 +54,16 @@ class NotificationController extends Controller
     {
         return [
             'id' => $broadcast->id,
-            'title' => $broadcast->title,
-            'message' => $broadcast->message,
+            'title' => $broadcast->localizedTitle(),
+            'message' => $broadcast->localizedMessage(),
+            'title_ru' => $broadcast->title,
+            'message_ru' => $broadcast->message,
+            'translations' => $broadcast->translations ?: [
+                'ru' => [
+                    'title' => $broadcast->title,
+                    'message' => $broadcast->message,
+                ],
+            ],
             'action_url' => $broadcast->action_url,
             'created_at' => $broadcast->created_at?->toIso8601String(),
             'updated_at' => $broadcast->updated_at?->toIso8601String(),
@@ -138,12 +153,21 @@ class NotificationController extends Controller
         $validated = $request->validate([
             'title' => ['required', 'string', 'max:255'],
             'message' => ['required', 'string', 'max:5000'],
+            'translations' => ['required', 'array'],
+            'translations.kk.title' => ['required', 'string', 'max:255'],
+            'translations.kk.message' => ['required', 'string', 'max:5000'],
+            'translations.en.title' => ['required', 'string', 'max:255'],
+            'translations.en.message' => ['required', 'string', 'max:5000'],
             'action_url' => ['nullable', 'string', 'max:255'],
         ]);
 
+        $title = trim($validated['title']);
+        $message = trim($validated['message']);
+
         $broadcast = SystemNotification::query()->create([
-            'title' => $validated['title'],
-            'message' => $validated['message'],
+            'title' => $title,
+            'message' => $message,
+            'translations' => $this->translationsFromRequest($request, $title, $message),
             'action_url' => $validated['action_url'] ?? null,
             'created_by' => $sender->id,
         ]);
@@ -162,5 +186,46 @@ class NotificationController extends Controller
             201,
             'Уведомление отправлено всем пользователям'
         );
+    }
+
+    private function translationsFromRequest(Request $request, string $title, string $message): array
+    {
+        $translations = $request->input('translations', []);
+
+        return [
+            'ru' => [
+                'title' => $title,
+                'message' => $message,
+            ],
+            'kk' => [
+                'title' => trim((string) data_get($translations, 'kk.title')),
+                'message' => trim((string) data_get($translations, 'kk.message')),
+            ],
+            'en' => [
+                'title' => trim((string) data_get($translations, 'en.title')),
+                'message' => trim((string) data_get($translations, 'en.message')),
+            ],
+        ];
+    }
+
+    private function localizedDataValue(array $data, string $field, string $fallback): string
+    {
+        $locale = app()->getLocale();
+        $translations = $data['translations'] ?? [];
+        $localized = is_array($translations[$locale] ?? null) ? $translations[$locale] : [];
+        $value = $localized[$field] ?? null;
+
+        if (is_string($value) && trim($value) !== '') {
+            return $value;
+        }
+
+        $fallbackTranslation = is_array($translations['ru'] ?? null) ? $translations['ru'] : [];
+        $fallbackValue = $fallbackTranslation[$field] ?? null;
+
+        if (is_string($fallbackValue) && trim($fallbackValue) !== '') {
+            return $fallbackValue;
+        }
+
+        return $fallback;
     }
 }
