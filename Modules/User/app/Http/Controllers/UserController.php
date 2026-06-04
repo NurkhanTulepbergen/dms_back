@@ -65,7 +65,7 @@ class UserController extends Controller
         $query = User::query()
             ->select($this->userResourceColumns());
 
-        if ($request->user()?->role === 'employee') {
+        if (in_array($request->user()?->role, ['employee', 'dorm-admin'], true)) {
             $query->where('role', 'student');
         }
 

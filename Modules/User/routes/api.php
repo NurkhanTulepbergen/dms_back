@@ -24,7 +24,7 @@ Route::prefix('v1')
         | Users (read-only for now)
         |--------------------------------------------------------------------------
         */
-        Route::middleware('role:admin,manager,employee')->group(function () {
+        Route::middleware('role:admin,manager,employee,dorm-admin')->group(function () {
             Route::get('users', [UserController::class, 'index']);
         });
 

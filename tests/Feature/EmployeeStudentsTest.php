@@ -45,6 +45,40 @@ class EmployeeStudentsTest extends TestCase
             ->assertJsonPath('data.0.role', 'student');
     }
 
+    public function test_dorm_admin_can_view_only_students(): void
+    {
+        $dormAdmin = User::query()->create([
+            'name' => 'Dorm Admin',
+            'email' => 'dorm-admin@example.com',
+            'password' => 'password',
+            'role' => 'dorm-admin',
+        ]);
+
+        $student = User::query()->create([
+            'name' => 'Student',
+            'email' => 'student-for-dorm-admin@example.com',
+            'password' => 'password',
+            'role' => 'student',
+        ]);
+
+        User::query()->create([
+            'name' => 'Manager',
+            'email' => 'manager-for-dorm-admin@example.com',
+            'password' => 'password',
+            'role' => 'manager',
+        ]);
+
+        Sanctum::actingAs($dormAdmin);
+
+        $response = $this->getJson('/api/v1/users');
+
+        $response
+            ->assertOk()
+            ->assertJsonCount(1, 'data')
+            ->assertJsonPath('data.0.id', $student->id)
+            ->assertJsonPath('data.0.role', 'student');
+    }
+
     public function test_employee_cannot_create_users(): void
     {
         $employee = User::query()->create([
