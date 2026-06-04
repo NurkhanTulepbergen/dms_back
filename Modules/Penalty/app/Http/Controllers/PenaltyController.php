@@ -19,6 +19,8 @@ use Throwable;
 
 class PenaltyController extends Controller
 {
+    private array $activePenaltyPointsByUserId = [];
+
     public function __construct(
         private readonly PenaltyService $penaltyService,
         private readonly RedemptionService $redemptionService,
@@ -189,6 +191,7 @@ class PenaltyController extends Controller
             'latest_redemption_status' => $latestRedemption?->status,
             'redemptions_count' => $redemptions->count(),
             'pending_redemptions_count' => $redemptions->where('status', 'pending')->count(),
+            'discipline' => $this->serializeDiscipline($penalty),
         ];
     }
 
@@ -234,7 +237,33 @@ class PenaltyController extends Controller
             'email' => $user->email,
             'uni_id' => $user->uni_id,
             'role' => $user->role,
+            'discipline_limit' => (int) ($user->discipline_limit ?? 0),
         ];
+    }
+
+    private function serializeDiscipline(Penalty $penalty): array
+    {
+        $userId = (int) $penalty->user_id;
+        $disciplineLimit = (int) ($penalty->user?->discipline_limit ?? 0);
+        $activePoints = $this->activePenaltyPoints($userId);
+
+        return [
+            'active_points' => $activePoints,
+            'discipline_limit' => $disciplineLimit,
+            'limit_reached' => $disciplineLimit > 0 && $activePoints >= $disciplineLimit,
+        ];
+    }
+
+    private function activePenaltyPoints(int $userId): int
+    {
+        if (! array_key_exists($userId, $this->activePenaltyPointsByUserId)) {
+            $this->activePenaltyPointsByUserId[$userId] = (int) Penalty::query()
+                ->where('user_id', $userId)
+                ->where('status', 'active')
+                ->sum('points');
+        }
+
+        return $this->activePenaltyPointsByUserId[$userId];
     }
 
     private function serializeRedemption(?PenaltyRedemption $redemption): ?array

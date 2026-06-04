@@ -6,10 +6,12 @@ use App\Exceptions\BusinessException;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Notification as NotificationFacade;
 use Modules\Finance\Services\ChargeService;
 use Modules\Penalty\Models\Penalty;
 use Modules\Penalty\Models\PenaltyEvidence;
 use Modules\Penalty\Models\PenaltyRule;
+use Modules\Penalty\Notifications\DisciplineLimitReachedNotification;
 use Modules\Settlement\Models\Settlement;
 use Modules\User\Models\User;
 use ReflectionMethod;
@@ -283,10 +285,48 @@ class PenaltyService
 
         $discipline = $this->disciplinePolicyService->applyIfLimitReached((int) $user->id);
 
+        if (($discipline['settlement_closed'] ?? false) === true) {
+            $this->notifyDisciplineLimitReached($user, $penalty, $discipline);
+        }
+
         return [
             'penalty' => $penalty->load(['rule', 'evidences', 'redemptions']),
             'discipline' => $discipline,
         ];
+    }
+
+    private function notifyDisciplineLimitReached(User $student, Penalty $penalty, array $discipline): void
+    {
+        $activePoints = (int) ($discipline['active_points'] ?? 0);
+        $disciplineLimit = (int) ($discipline['discipline_limit'] ?? 0);
+
+        if ($disciplineLimit <= 0) {
+            return;
+        }
+
+        $recipients = User::query()
+            ->where(function (Builder $query) use ($student) {
+                $query
+                    ->where('id', $student->id)
+                    ->orWhereIn('role', ['manager', 'admin', 'dorm-admin']);
+            })
+            ->get()
+            ->unique('id')
+            ->values();
+
+        if ($recipients->isEmpty()) {
+            return;
+        }
+
+        NotificationFacade::send(
+            $recipients,
+            new DisciplineLimitReachedNotification(
+                $student,
+                $penalty,
+                $activePoints,
+                $disciplineLimit,
+            )
+        );
     }
 
     private function getActiveUserSettlement(int $userId): Settlement
