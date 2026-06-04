@@ -26,7 +26,14 @@ class UserForm
                     ->required(fn (string $operation): bool => $operation === 'create')
                     ->dehydrated(fn (?string $state): bool => filled($state))
                     ->dehydrateStateUsing(fn (string $state): string => Hash::make($state)),
-                TextInput::make('role')
+                Select::make('role')
+                    ->options([
+                        'student' => 'Student',
+                        'manager' => 'Manager',
+                        'admin' => 'Admin',
+                        'dorm-admin' => 'Dorm admin',
+                        'employee' => 'Employee',
+                    ])
                     ->required()
                     ->default('student'),
                 TextInput::make('lastname'),
