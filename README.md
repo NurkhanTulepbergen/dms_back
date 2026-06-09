@@ -125,6 +125,23 @@ php artisan migrate
 php artisan db:seed
 ```
 
+### Production-like демо-данные
+
+Для наполнения сервера реалистичными данными используется `Database\Seeders\ProductionDemoSeeder`.
+Он подключен к общему `DatabaseSeeder`, не очищает базу и безопасен для повторного запуска: существующие демо-записи обновляются по стабильным email, uni_id, code и другим ключам.
+
+При запуске через Docker на сервере:
+
+```bash
+docker compose exec backend php artisan db:seed --force
+```
+
+Если нужно запустить только production-like набор без остальных сидеров:
+
+```bash
+docker compose exec backend php artisan db:seed --class=ProductionDemoSeeder --force
+```
+
 Запуск API:
 
 ```bash

@@ -20,6 +20,7 @@ class DatabaseSeeder extends Seeder
             DormitoryStructureSeeder::class,
             GymDatabaseSeeder::class,
             UserDatabaseSeeder::class,
+            ProductionDemoSeeder::class,
         ]);
     }
 }
